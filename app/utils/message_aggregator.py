@@ -10,7 +10,8 @@ _message_tasks = {}
 _message_futures = {}
 
 async def debounce_and_collect(phone: str, empresa: str, mensagem: str) -> str:
-    if not mensagem.strip():
+    mensagem = (mensagem or "").strip()
+    if not mensagem:
         logger.info(f"[🚫 IGNORADO NO DEBOUNCE] Mensagem vazia não será processada | {phone}")
         return ""
 
@@ -21,7 +22,7 @@ async def debounce_and_collect(phone: str, empresa: str, mensagem: str) -> str:
         _message_tasks[key].cancel()
 
     future = asyncio.get_event_loop().create_future()
-    _message_futures[key] = future  # armazena a referência para validar depois
+    _message_futures[key] = future
 
     async def finalize():
         try:
@@ -29,10 +30,10 @@ async def debounce_and_collect(phone: str, empresa: str, mensagem: str) -> str:
             mensagens = _message_buffers.pop(key, [])
             texto_agrupado = ", ".join(mensagens).strip()
             logger.info(f"[🧩 FINALIZADO DEBOUNCE] {key} => {texto_agrupado}")
-            
-            future = _message_futures.pop(key, None)
-            if future and not future.done():
-                future.set_result(texto_agrupado)
+
+            fut = _message_futures.pop(key, None)
+            if fut and not fut.done():
+                fut.set_result(texto_agrupado)
         except asyncio.CancelledError:
             logger.debug(f"[🔁 DEBOUNCE REINICIADO] {key}")
         finally:
@@ -40,4 +41,3 @@ async def debounce_and_collect(phone: str, empresa: str, mensagem: str) -> str:
 
     _message_tasks[key] = asyncio.create_task(finalize())
     return await future
-
