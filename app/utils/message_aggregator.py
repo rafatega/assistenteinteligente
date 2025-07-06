@@ -7,7 +7,13 @@ DEBOUNCE_DELAY = 10
 _message_buffers = defaultdict(list)
 _message_tasks = {}
 
+# utils/message_aggregator.py
 async def debounce_and_collect(phone: str, empresa: str, mensagem: str) -> str:
+    mensagem = (mensagem or "").strip()
+    if not mensagem:
+        logger.debug(f"[⚠️ DESCARTADO VAZIO] {phone}")
+        return ""
+
     key = f"{phone}:{empresa}"
     _message_buffers[key].append(mensagem)
 
@@ -29,3 +35,4 @@ async def debounce_and_collect(phone: str, empresa: str, mensagem: str) -> str:
 
     _message_tasks[key] = asyncio.create_task(finalize())
     return await future
+

@@ -22,6 +22,10 @@ async def process_message(body: dict) -> dict:
     logger.info(f"[➡️ ENVIANDO PARA DEBOUNCE] {mensagem!r} de {webhook.phone}")
     agrupado = await debounce_and_collect(webhook.phone, webhook.connectedPhone, mensagem)
 
+    if not agrupado:
+        logger.info(f"[🔕 AGRUPAMENTO VAZIO] Ignorado | {webhook.phone}")
+        return {"status": "ignored"}
+
     logger.info(
         f"[✅ MENSAGEM AGRUPADA] {webhook.phone} - {webhook.connectedPhone}: {agrupado} | "
         f"{webhook.momment} | {webhook.senderName} | isGroup: {webhook.isGroup} | fromMe: {webhook.fromMe}"
