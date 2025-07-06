@@ -4,16 +4,12 @@ from collections import defaultdict
 from app.utils.logger import logger
 
 DEBOUNCE_DELAY = 10
+
 _message_buffers = defaultdict(list)
 _message_tasks = {}
+_message_futures = {}
 
-# utils/message_aggregator.py
 async def debounce_and_collect(phone: str, empresa: str, mensagem: str) -> str:
-    mensagem = (mensagem or "").strip()
-    if not mensagem:
-        logger.debug(f"[⚠️ DESCARTADO VAZIO] {phone}")
-        return ""
-
     key = f"{phone}:{empresa}"
     _message_buffers[key].append(mensagem)
 
@@ -21,18 +17,19 @@ async def debounce_and_collect(phone: str, empresa: str, mensagem: str) -> str:
         _message_tasks[key].cancel()
 
     future = asyncio.get_event_loop().create_future()
+    _message_futures[key] = future
 
     async def finalize():
         try:
             await asyncio.sleep(DEBOUNCE_DELAY)
             mensagens = _message_buffers.pop(key, [])
             texto_agrupado = ", ".join(mensagens).strip()
-            future.set_result(texto_agrupado)
+            logger.info(f"[🧩 FINALIZADO DEBOUNCE] {key} => {texto_agrupado}")
+            _message_futures[key].set_result(texto_agrupado)
         except asyncio.CancelledError:
-            logger.debug(f"[🔁 REINICIANDO DEBOUNCE] {key}")
+            logger.debug(f"[🔁 DEBOUNCE REINICIADO] {key}")
         finally:
             _message_tasks.pop(key, None)
 
     _message_tasks[key] = asyncio.create_task(finalize())
     return await future
-
