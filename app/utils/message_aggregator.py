@@ -6,6 +6,7 @@ from datetime import datetime
 REDIS_URL = os.environ.get("REDIS_URL")
 
 debounce_tasks = {}
+debounce_futures = {}
 
 redis: Redis = None
 
@@ -24,30 +25,42 @@ async def debounce_and_collect(phone: str, connected_phone: str, mensagem: str) 
     redis_key = _get_redis_key(phone, connected_phone)
     redis_client = await get_redis()
 
+    task_key = f"{phone}:{connected_phone}"
+
     # Armazena mensagem
     await redis_client.rpush(redis_key, mensagem)
-    await redis_client.expire(redis_key, 10)  # Reinicia TTL para 10s
+    await redis_client.expire(redis_key, 10)
 
-    # Cancela tarefa anterior se existir
-    task_key = f"{phone}:{connected_phone}"
+    # Se já houver tarefa, cancela e substitui
     if task_key in debounce_tasks:
         debounce_tasks[task_key].cancel()
 
-    # Cria nova tarefa de agregacao
+    # Cria future para aguardar resultado
+    future = asyncio.get_event_loop().create_future()
+    debounce_futures[task_key] = future
+
+    # Agenda nova tarefa debounce
     debounce_tasks[task_key] = asyncio.create_task(
-        _espera_e_retorna(redis_key, task_key)
+        _espera_e_retorna(redis_key, task_key, future)
     )
 
-    # Retorna mensagens acumuladas até agora
-    mensagens = await redis_client.lrange(redis_key, 0, -1)
-    return " ".join(mensagens)
+    # Aguarda resultado final
+    resultado = await future
+    return resultado
 
 
-async def _espera_e_retorna(redis_key: str, task_key: str):
+async def _espera_e_retorna(redis_key: str, task_key: str, future: asyncio.Future):
     try:
         await asyncio.sleep(10)
         redis_client = await get_redis()
+        mensagens = await redis_client.lrange(redis_key, 0, -1)
         await redis_client.delete(redis_key)
+
+        resultado = " ".join(mensagens)
+        if not future.done():
+            future.set_result(resultado)
+
         debounce_tasks.pop(task_key, None)
+        debounce_futures.pop(task_key, None)
     except asyncio.CancelledError:
         pass
