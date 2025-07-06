@@ -7,15 +7,6 @@ async def process_message(body: dict) -> dict:
 
     mensagem = await extract_message_content(received_webhook)
 
-
-
-
-
-
-
-
-
-    
     numero = received_webhook.phone
     telefone_empresa = received_webhook.connectedPhone
     nome_cliente = received_webhook.senderName
