@@ -6,6 +6,7 @@ requests
 pyngrok
 numpy
 redis
+aioredis
 httpx
 pyreadline3
 python-dotenv

@@ -1,43 +1,47 @@
-# utils/message_aggregator.py
 import asyncio
-from collections import defaultdict
-from app.utils.logger import logger
+import aioredis
+import os
+from datetime import datetime
 
-DEBOUNCE_DELAY = 10
+STREAM_KEY = "messages:{empresa}:{phone}"
+GROUP   = "batchers"
 
-_message_buffers = defaultdict(list)
-_message_tasks = {}
-_message_futures = {}
+async def worker(empresa: str, phone: str, debounce_ms: int = 10000):
+    redis = await aioredis.create_redis_pool(os.environ.get("REDIS_URL"))
+    key = STREAM_KEY.format(empresa=empresa, phone=phone)
+    # Cria grupo se não existir
+    try:
+        await redis.xgroup_create(key, GROUP, id="0", mkstream=True)
+    except aioredis.errors.ReplyError:
+        pass  # Já existe
 
-async def debounce_and_collect(phone: str, empresa: str, mensagem: str) -> str:
-    mensagem = (mensagem or "").strip()
-    if not mensagem:
-        logger.info(f"[🚫 IGNORADO NO DEBOUNCE] Mensagem vazia não será processada | {phone}")
-        return ""
+    buffer = []
+    last_read_id = ">"
+    while True:
+        entries = await redis.xread_group(
+            GROUP, f"consumer-{phone}", streams={key: last_read_id},
+            count=100, latest_ids=None, timeout=debounce_ms
+        )
+        if not entries:
+            # Timeout: agrupa o batch atual
+            if buffer:
+                await process_batch(buffer)
+                buffer.clear()
+            continue
 
-    key = f"{phone}:{empresa}"
-    _message_buffers[key].append(mensagem)
+        # Recebeu novos eventos
+        for _, msgs in entries:
+            for msg_id, fields in msgs:
+                buffer.append(fields[b"mensagem"].decode())
+                last_read_id = msg_id
+        # Se explodir em tamanho, processa de imediato
+        if len(buffer) >= 50:
+            await process_batch(buffer)
+            buffer.clear()
+        # ACK todos até last_read_id
+        await redis.xack(key, GROUP, last_read_id)
 
-    if key in _message_tasks:
-        _message_tasks[key].cancel()
-
-    future = asyncio.get_event_loop().create_future()
-    _message_futures[key] = future
-
-    async def finalize():
-        try:
-            await asyncio.sleep(DEBOUNCE_DELAY)
-            mensagens = _message_buffers.pop(key, [])
-            texto_agrupado = ", ".join(mensagens).strip()
-            logger.info(f"[🧩 FINALIZADO DEBOUNCE] {key} => {texto_agrupado}")
-
-            fut = _message_futures.pop(key, None)
-            if fut and not fut.done():
-                fut.set_result(texto_agrupado)
-        except asyncio.CancelledError:
-            logger.debug(f"[🔁 DEBOUNCE REINICIADO] {key}")
-        finally:
-            _message_tasks.pop(key, None)
-
-    _message_tasks[key] = asyncio.create_task(finalize())
-    return await future
+async def process_batch(batch):
+    texto = ", ".join(batch)
+    # ... processa como se fosse uma única mensagem
+    print(f"[{datetime.utcnow()}] Processando: {texto[:50]}...")
