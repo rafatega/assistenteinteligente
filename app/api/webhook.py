@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Request
-from assistente.servicos.processar_mensagem import processa_mensagem
+from app.services.message_handler import process_message
 
 router = APIRouter()
 
 @router.post("/webhook")
-async def receber_mensagem(request: Request):
+async def receive_message(request: Request):
     body = await request.json()
-    return await processa_mensagem(body)
+    return await process_message(body)
 
 @router.get("/ping")
 def ping():
