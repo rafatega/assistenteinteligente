@@ -55,8 +55,8 @@ async def debounce_and_collect(phone: str, connected_phone: str, mensagem: str) 
 
 async def _espera_e_retorna(redis_key: str, task_key: str, future: asyncio.Future):
     try:
-        logger.info(f"[⏳ Esperando 10s] {task_key}")
-        await asyncio.sleep(10)
+        logger.info(f"[⏳ Esperando 5s] {task_key}")
+        await asyncio.sleep(5)
 
         redis_client = await get_redis()
         mensagens = await redis_client.lrange(redis_key, 0, -1)
