@@ -11,3 +11,4 @@ pyreadline3
 python-dotenv
 supabase
 unidecode
+pydantic-settings
