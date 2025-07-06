@@ -21,8 +21,8 @@ async def extract_message_content(received_webhook: dict) -> str | None:
             with open("/tmp/audio.ogg", "rb") as audio_file:
                 transcription = openai.Audio.transcribe("whisper-1", audio_file)
 
-            texto = transcription.get("text")
-            return texto.strip() if texto else None
+            mensagem = transcription.get("text")
+            return mensagem.strip() if mensagem else None
         except Exception as e:
             logger.exception(f"[ERRO AO TRANSCREVER ÁUDIO] {e}")
             return None
