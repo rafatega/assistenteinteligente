@@ -3,7 +3,7 @@ import asyncio
 from collections import defaultdict
 from app.utils.logger import logger
 
-DEBOUNCE_DELAY = 5
+DEBOUNCE_DELAY = 10
 _message_buffers = defaultdict(list)
 _message_tasks = {}
 
