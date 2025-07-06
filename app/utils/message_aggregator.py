@@ -20,7 +20,7 @@ async def debounce_and_collect(phone: str, empresa: str, mensagem: str) -> str:
         try:
             await asyncio.sleep(DEBOUNCE_DELAY)
             mensagens = _message_buffers.pop(key, [])
-            texto_agrupado = " ".join(mensagens).strip()
+            texto_agrupado = ", ".join(mensagens).strip()
             future.set_result(texto_agrupado)
         except asyncio.CancelledError:
             logger.debug(f"[🔁 REINICIANDO DEBOUNCE] {key}")

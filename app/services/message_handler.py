@@ -5,21 +5,25 @@ from app.utils.message_aggregator import debounce_and_collect
 
 async def process_message(body: dict) -> dict:
     webhook = WebhookMessage(**body)
-    mensagem = await extract_message_content(webhook)
+    mensagem = (await extract_message_content(webhook) or "").strip()
 
-    if not mensagem or webhook.isGroup:
+    if not mensagem or webhook.isGroup or webhook.fromMe:
+        logger.info(f"[🔕 IGNORADO] Vazio ou inválido | {webhook.phone}")
         return {"status": "ignored"}
 
     agrupado = await debounce_and_collect(webhook.phone, webhook.connectedPhone, mensagem)
-    
-    logger.info(f"[✅ MENSAGEM RECEBIDA] {webhook.phone} - {webhook.connectedPhone}: {agrupado} | {webhook.momment} | {webhook.senderName} | isGroup: {webhook.isGroup} | fromMe: {webhook.fromMe}")
-    
+
+    logger.info(
+        f"[✅ MENSAGEM AGRUPADA] {webhook.phone} - {webhook.connectedPhone}: {agrupado} | "
+        f"{webhook.momment} | {webhook.senderName} | isGroup: {webhook.isGroup} | fromMe: {webhook.fromMe}"
+    )
+
     return {
-    "mensagem": agrupado,
-    "numero": webhook.phone,
-    "telefone_empresa": webhook.connectedPhone,
-    "momento": webhook.momment,
-    "nome_cliente": webhook.senderName,
-    "is_group": webhook.isGroup,
-    "from_me": webhook.fromMe
+        "mensagem": agrupado,
+        "numero": webhook.phone,
+        "telefone_empresa": webhook.connectedPhone,
+        "momento": webhook.momment,
+        "nome_cliente": webhook.senderName,
+        "is_group": webhook.isGroup,
+        "from_me": webhook.fromMe
     }
