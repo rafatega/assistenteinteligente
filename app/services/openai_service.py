@@ -1,14 +1,19 @@
 import requests
+import openai
 
-async def extract_message_content(body: dict) -> str | None:
-    if msg := body.get("text", {}).get("message"):
-        return msg.strip()
+from app.utils.logger import logger
+
+# Inicializa APIs
+openai.api_key = API_KEY_OPENAI
+
+async def extract_message_content(received_webhook: dict) -> str | None:
+    if mensagem := received_webhook.mensagem_texto:
+        return mensagem.strip()
 
     # Se for áudio recebido
-    audio = body.get("audio")
-    if audio and (url := audio.get("audioUrl")):
+    if audio := received_webhook.url_audio:
         try:
-            r = requests.get(url)
+            r = requests.get(audio)
             with open("/tmp/audio.ogg", "wb") as f:
                 f.write(r.content)
 
