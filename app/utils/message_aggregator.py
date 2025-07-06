@@ -1,9 +1,12 @@
 import asyncio
 import os
+import logging
 from redis.asyncio import Redis
 from datetime import datetime
 
 REDIS_URL = os.environ.get("REDIS_URL")
+
+logger = logging.getLogger("aggregator")
 
 debounce_tasks = {}
 debounce_futures = {}
@@ -31,9 +34,13 @@ async def debounce_and_collect(phone: str, connected_phone: str, mensagem: str) 
     await redis_client.rpush(redis_key, mensagem)
     await redis_client.expire(redis_key, 10)
 
-    # Se já houver tarefa, cancela e substitui
+    # Se já houver tarefa, cancela e remove
     if task_key in debounce_tasks:
         debounce_tasks[task_key].cancel()
+        debounce_tasks.pop(task_key, None)
+
+    if task_key in debounce_futures:
+        debounce_futures.pop(task_key, None)
 
     # Cria future para aguardar resultado
     future = asyncio.get_event_loop().create_future()
@@ -51,16 +58,23 @@ async def debounce_and_collect(phone: str, connected_phone: str, mensagem: str) 
 
 async def _espera_e_retorna(redis_key: str, task_key: str, future: asyncio.Future):
     try:
+        logger.info(f"[⏳ Esperando 10s] {task_key}")
         await asyncio.sleep(10)
+
         redis_client = await get_redis()
         mensagens = await redis_client.lrange(redis_key, 0, -1)
+        logger.info(f"[📦 Mensagens encontradas] {mensagens}")
+
         await redis_client.delete(redis_key)
 
         resultado = " ".join(mensagens)
         if not future.done():
             future.set_result(resultado)
+        else:
+            logger.warning(f"[⚠️ Future já resolvida] {task_key}")
 
         debounce_tasks.pop(task_key, None)
         debounce_futures.pop(task_key, None)
+        logger.info(f"[✅ Resultado final enviado] {resultado}")
     except asyncio.CancelledError:
-        pass
+        logger.info(f"[🚫 Debounce cancelado] {task_key}")
