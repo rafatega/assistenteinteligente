@@ -25,7 +25,10 @@ async def debounce_and_collect(phone: str, empresa: str, mensagem: str) -> str:
             mensagens = _message_buffers.pop(key, [])
             texto_agrupado = ", ".join(mensagens).strip()
             logger.info(f"[🧩 FINALIZADO DEBOUNCE] {key} => {texto_agrupado}")
-            _message_futures[key].set_result(texto_agrupado)
+        
+            future = _message_futures.pop(key, None)
+            if future and not future.done():
+                future.set_result(texto_agrupado)
         except asyncio.CancelledError:
             logger.debug(f"[🔁 DEBOUNCE REINICIADO] {key}")
         finally:
