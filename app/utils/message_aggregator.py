@@ -64,7 +64,7 @@ async def _espera_e_retorna(redis_key: str, task_key: str, future: asyncio.Futur
 
         await redis_client.delete(redis_key)
 
-        resultado = " ".join(mensagens)
+        resultado = ", ".join(mensagens)
         if not future.done():
             future.set_result(resultado)
         else:
