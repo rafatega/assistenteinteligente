@@ -5,7 +5,8 @@ from app.utils.message_aggregator import debounce_and_collect
 
 async def process_message(body: dict) -> dict:
     webhook = WebhookMessage(**body)
-    mensagem = (await extract_message_content(webhook) or "").strip()
+    mensagem_raw = await extract_message_content(webhook)
+    mensagem = (mensagem_raw or "").strip()
 
     if not mensagem or webhook.isGroup or webhook.fromMe:
         logger.info(f"[🔕 IGNORADO] Vazio ou inválido | {webhook.phone}")
