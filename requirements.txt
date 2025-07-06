@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+openai==0.28
+pinecone
+requests
+pyngrok
+numpy
+redis
+httpx
+pyreadline3
+python-dotenv
+supabase
+unidecode
