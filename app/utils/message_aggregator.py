@@ -1,12 +1,10 @@
 import asyncio
 import os
-import logging
+from app.utils.logger import logger
 from redis.asyncio import Redis
 from datetime import datetime
 
 REDIS_URL = os.environ.get("REDIS_URL")
-
-logger = logging.getLogger("aggregator")
 
 debounce_tasks = {}
 debounce_futures = {}
