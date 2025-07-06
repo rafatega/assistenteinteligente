@@ -1,11 +1,11 @@
 import requests
 import openai
 
-from app.models.api_key_loader import settings
+from app.config.settings import API_KEY_OPENAI
 from app.utils.logger import logger
 
 # Inicializa APIs
-openai.api_key = settings.API_KEY_OPENAI
+openai.api_key = API_KEY_OPENAI
 
 async def extract_message_content(received_webhook: dict) -> str | None:
     if mensagem := received_webhook.mensagem_texto:
