@@ -30,7 +30,6 @@ async def debounce_and_collect(phone: str, connected_phone: str, mensagem: str) 
 
     # Armazena mensagem
     await redis_client.rpush(redis_key, mensagem)
-    await redis_client.expire(redis_key, 10)
 
     # Se já houver tarefa, cancela e remove
     if task_key in debounce_tasks:
