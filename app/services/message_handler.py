@@ -15,5 +15,4 @@ async def process_message(body: dict) -> dict:
 
     logger.info(f"[PROCESSANDO MENSAGEM] Mensagem: {mensagem}, numero: {numero}, telefone_empresa: {telefone_empresa}, nome_cliente: {nome_cliente}, is_group: {is_group}, from_me: {from_me}")
 
-
     return {"status": "ok"}
