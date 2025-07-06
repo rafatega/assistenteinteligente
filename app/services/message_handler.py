@@ -7,24 +7,14 @@ async def process_message(body: dict) -> dict:
     webhook = WebhookMessage(**body)
 
     # Extrai mensagem e limpa espaços
-    mensagem_raw = await extract_message_content(webhook)
-    mensagem = (mensagem_raw or "").strip()
+    mensagem = await extract_message_content(webhook)
 
     # Proteção real: nunca chama debounce se mensagem não for válida
-    if not mensagem:
+    if not mensagem or webhook.isGroup or webhook.fromMe:
         logger.info(f"[🔕 IGNORADO] Mensagem vazia | {webhook.phone}")
         return {"status": "ignored"}
-
-    if webhook.isGroup or webhook.fromMe:
-        logger.info(f"[🔕 IGNORADO] Grupo ou enviada por mim | {webhook.phone}")
-        return {"status": "ignored"}
-
-    logger.info(f"[➡️ ENVIANDO PARA DEBOUNCE] {mensagem!r} de {webhook.phone}")
+    
     agrupado = await debounce_and_collect(webhook.phone, webhook.connectedPhone, mensagem)
-
-    if not agrupado:
-        logger.info(f"[🔕 AGRUPAMENTO VAZIO] Ignorado | {webhook.phone}")
-        return {"status": "ignored"}
 
     logger.info(
         f"[✅ MENSAGEM AGRUPADA] {webhook.phone} - {webhook.connectedPhone}: {agrupado} | "
