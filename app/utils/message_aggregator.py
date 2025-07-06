@@ -1,18 +1,18 @@
 import asyncio
-import aioredis
 import os
+from redis.asyncio import Redis
 from datetime import datetime
 
 REDIS_URL = os.environ.get("REDIS_URL")
 
 debounce_tasks = {}
 
-redis = None
+redis: Redis = None
 
 async def get_redis():
     global redis
     if not redis:
-        redis = await aioredis.from_url(REDIS_URL, decode_responses=True)
+        redis = Redis.from_url(REDIS_URL, decode_responses=True)
     return redis
 
 
