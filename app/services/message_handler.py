@@ -5,14 +5,21 @@ from app.utils.message_aggregator import debounce_and_collect
 
 async def process_message(body: dict) -> dict:
     webhook = WebhookMessage(**body)
+
+    # Extrai mensagem e limpa espaços
     mensagem_raw = await extract_message_content(webhook)
     mensagem = (mensagem_raw or "").strip()
 
-    if not mensagem or webhook.isGroup or webhook.fromMe:
-        logger.info(f"[🔕 IGNORADO] Vazio ou inválido | {webhook.phone}")
+    # Proteção real: nunca chama debounce se mensagem não for válida
+    if not mensagem:
+        logger.info(f"[🔕 IGNORADO] Mensagem vazia | {webhook.phone}")
         return {"status": "ignored"}
-    
-    logger.info(f"Mensagem enviada ao agregador: {mensagem!r}")
+
+    if webhook.isGroup or webhook.fromMe:
+        logger.info(f"[🔕 IGNORADO] Grupo ou enviada por mim | {webhook.phone}")
+        return {"status": "ignored"}
+
+    logger.info(f"[➡️ ENVIANDO PARA DEBOUNCE] {mensagem!r} de {webhook.phone}")
     agrupado = await debounce_and_collect(webhook.phone, webhook.connectedPhone, mensagem)
 
     logger.info(
@@ -29,3 +36,4 @@ async def process_message(body: dict) -> dict:
         "is_group": webhook.isGroup,
         "from_me": webhook.fromMe
     }
+
