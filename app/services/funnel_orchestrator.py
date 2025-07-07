@@ -9,7 +9,7 @@ from app.config.supabase_client import supabase
 
 
 ACCOUNT_DATA = "account_data"
-CACHE_TTL_SECONDS = 14400  # 4 horas
+CACHE_TTL_SECONDS = 3600  # 1 hora
 
 async def fetch_account_data(telefone_empresa: str) -> Dict[str, Any]:
     cache_key = f"{ACCOUNT_DATA}:{telefone_empresa}"
