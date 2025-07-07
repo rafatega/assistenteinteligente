@@ -44,6 +44,7 @@ async def process_message(body: dict) -> dict:
     # Só processa se a mensagem não for do próprio bot/assistente
     if not conversation['from_me']:
         funnel_result = await process_funnel_message(conversation['numero'], conversation['mensagem'], conversation['nome_cliente'])
+        pass
 
     return conversation
 
