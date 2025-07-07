@@ -3,8 +3,7 @@ from app.services.openai_service import extract_message_content
 from app.utils.logger import logger
 from app.utils.message_aggregator import debounce_and_collect
 
-async def process_message(body: dict) -> dict:
-    webhook = WebhookMessage(**body)
+async def conversation_pipeline(webhook: WebhookMessage) -> dict:
 
     # Extrai mensagem e limpa espaços
     mensagem = await extract_message_content(webhook)
@@ -30,4 +29,9 @@ async def process_message(body: dict) -> dict:
         "is_group": webhook.isGroup,
         "from_me": webhook.fromMe
     }
+
+async def process_message(body: dict) -> dict:
+    webhook = WebhookMessage(**body)
+    conversation =  await conversation_pipeline(webhook)
+    logger.info(f"[📬 MENSAGEM RECEBIDA] {conversation.phone} - {conversation.connectedPhone}: {conversation['mensagem']}")
 
