@@ -1,5 +1,6 @@
 from app.models.receive_message import WebhookMessage
 from app.services.openai_service import extract_message_content
+from app.services.funnel_orchestrator import process_funnel_message
 from app.utils.logger import logger
 from app.utils.message_aggregator import debounce_and_collect
 
@@ -37,8 +38,12 @@ async def conversation_pipeline(webhook: WebhookMessage) -> dict:
 
 async def process_message(body: dict) -> dict:
     webhook = WebhookMessage(**body)
-    logger.info(f"[📬 WEBHOOK] {webhook}")
     conversation =  await conversation_pipeline(webhook)
     logger.info(f"[📬 MENSAGEM RECEBIDA] {conversation['numero']} - {conversation['telefone_empresa']}: {conversation['mensagem']}")
+
+    # Só processa se a mensagem não for do próprio bot/assistente
+    if not conversation['from_me']:
+        funnel_result = await process_funnel_message(conversation['numero'], conversation['mensagem'], conversation['nome_cliente'])
+
     return conversation
 
