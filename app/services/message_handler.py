@@ -32,6 +32,7 @@ async def conversation_pipeline(webhook: WebhookMessage) -> dict:
 
 async def process_message(body: dict) -> dict:
     webhook = WebhookMessage(**body)
+    logger.info(f"[📬 WEBHOOK] {webhook}")
     conversation =  await conversation_pipeline(webhook)
     logger.info(f"[📬 MENSAGEM RECEBIDA] {conversation['numero']} - {conversation['telefone_empresa']}: {conversation['mensagem']}")
     return conversation
