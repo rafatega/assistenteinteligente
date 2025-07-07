@@ -30,7 +30,7 @@ async def fetch_account_data(telefone_empresa: str) -> Dict[str, Any]:
             account_config = res.data[0]
 
             # Valida estrutura mínima obrigatória
-            if "prompt_base" not in account_config or "funil" not in account_config:
+            if "account_info" not in account_config:
                 logger.warning(f"[fetch_account_data] Dados incompletos no Supabase: {account_config}")
                 return build_default_account_config()
 
