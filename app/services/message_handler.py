@@ -45,7 +45,8 @@ async def process_message(body: dict) -> dict:
     # Só processa se a mensagem não for do próprio bot/assistente
     if not conversation['from_me']:
         #funnel_result = await process_user_funnel(conversation['mensagem'], conversation['numero'], conversation['telefone_empresa'], conversation['nome_cliente'])
-        logger.info(f"[🚀 FUNIL PROCESSADO] {conversation['numero']} - {conversation['telefone_empresa']}: {funnel_result}")
+        logger.info(f"[🚀 FUNIL PROCESSADO] {conversation['numero']} - {conversation['telefone_empresa']}: {conversation['mensagem']}")
+        logger.info(f"[📦 RESULTADO FUNIL] {account_data}")
     else:
         logger.info(f"[🔕 IGNORADO] Mensagem do próprio bot/assistente: {conversation['numero']} - {conversation['telefone_empresa']}")
 
