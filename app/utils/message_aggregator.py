@@ -14,7 +14,7 @@ def _get_redis_key(phone: str, connected_phone: str) -> str:
     return f"debounce:{phone}:{connected_phone}"
 
 
-async def debounce_and_collect(phone: str, connected_phone: str, mensagem: str) -> str:
+async def debounce_and_collect(phone: str, connected_phone: str, mensagem: str, tempo_espera_debounce: int) -> str:
     redis_key = _get_redis_key(phone, connected_phone)
 
     task_key = f"{phone}:{connected_phone}"
@@ -36,7 +36,7 @@ async def debounce_and_collect(phone: str, connected_phone: str, mensagem: str) 
 
     # Agenda nova tarefa debounce
     debounce_tasks[task_key] = asyncio.create_task(
-        _espera_e_retorna(redis_key, task_key, future)
+        _espera_e_retorna(redis_key, task_key, future, tempo_espera_debounce)
     )
 
     # Aguarda resultado final
@@ -44,10 +44,11 @@ async def debounce_and_collect(phone: str, connected_phone: str, mensagem: str) 
     return resultado
 
 
-async def _espera_e_retorna(redis_key: str, task_key: str, future: asyncio.Future):
+async def _espera_e_retorna(redis_key: str, task_key: str, future: asyncio.Future, tempo_espera_debounce: int):
     try:
         logger.info(f"[⏳ Esperando 5s] {task_key}")
-        await asyncio.sleep(5)
+        await asyncio.sleep(tempo_espera_debounce)
+        logger.info(f"[✅ Tempo de espera concluído]: {tempo_espera_debounce} segundos")
 
         mensagens = await redis_client.lrange(redis_key, 0, -1)
         logger.info(f"[📦 Mensagens encontradas] {mensagens}")

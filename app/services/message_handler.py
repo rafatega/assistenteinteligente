@@ -1,10 +1,10 @@
 from app.models.receive_message import WebhookMessage
 from app.services.openai_service import extract_message_content
-from app.services.funnel_orchestrator import process_user_funnel
+from app.services.funnel_orchestrator import fetch_account_data, process_user_funnel
 from app.utils.logger import logger
 from app.utils.message_aggregator import debounce_and_collect
 
-async def conversation_pipeline(webhook: WebhookMessage) -> dict:
+async def conversation_pipeline(webhook: WebhookMessage, tempo_espera_debounce: int) -> dict:
 
     # Extrai mensagem e limpa espaços
     mensagem = await extract_message_content(webhook)
@@ -23,7 +23,7 @@ async def conversation_pipeline(webhook: WebhookMessage) -> dict:
             "from_me": webhook.fromMe
         }
     
-    agrupado = await debounce_and_collect(webhook.phone, webhook.connectedPhone, mensagem)
+    agrupado = await debounce_and_collect(webhook.phone, webhook.connectedPhone, mensagem, tempo_espera_debounce)
 
     return {
         "status": "ok",
@@ -38,12 +38,13 @@ async def conversation_pipeline(webhook: WebhookMessage) -> dict:
 
 async def process_message(body: dict) -> dict:
     webhook = WebhookMessage(**body)
-    conversation =  await conversation_pipeline(webhook)
+    account_data = await fetch_account_data(webhook.connectedPhone)
+    conversation =  await conversation_pipeline(webhook, account_data.tempo_espera_debounce)
     logger.info(f"[📬 MENSAGEM RECEBIDA] {conversation['numero']} - {conversation['telefone_empresa']}: {conversation['mensagem']}")
 
     # Só processa se a mensagem não for do próprio bot/assistente
     if not conversation['from_me']:
-        funnel_result = await process_user_funnel(conversation['mensagem'], conversation['numero'], conversation['telefone_empresa'], conversation['nome_cliente'])
+        #funnel_result = await process_user_funnel(conversation['mensagem'], conversation['numero'], conversation['telefone_empresa'], conversation['nome_cliente'])
         logger.info(f"[🚀 FUNIL PROCESSADO] {conversation['numero']} - {conversation['telefone_empresa']}: {funnel_result}")
     else:
         logger.info(f"[🔕 IGNORADO] Mensagem do próprio bot/assistente: {conversation['numero']} - {conversation['telefone_empresa']}")
