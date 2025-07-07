@@ -1,21 +1,13 @@
 import asyncio
 import os
-from app.utils.logger import logger
 from redis.asyncio import Redis
 from datetime import datetime
 
-REDIS_URL = os.environ.get("REDIS_URL")
+from app.utils.logger import logger
+from app.config.redis import redis_client
 
 debounce_tasks = {}
 debounce_futures = {}
-
-redis: Redis = None
-
-async def get_redis():
-    global redis
-    if not redis:
-        redis = Redis.from_url(REDIS_URL, decode_responses=True)
-    return redis
 
 
 def _get_redis_key(phone: str, connected_phone: str) -> str:
@@ -24,7 +16,6 @@ def _get_redis_key(phone: str, connected_phone: str) -> str:
 
 async def debounce_and_collect(phone: str, connected_phone: str, mensagem: str) -> str:
     redis_key = _get_redis_key(phone, connected_phone)
-    redis_client = await get_redis()
 
     task_key = f"{phone}:{connected_phone}"
 
