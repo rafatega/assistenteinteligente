@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Optional, Dict, Any, TypedDict
 from app.utils.logger import logger
 
-from app.config.redis_client import redis
+from app.config.redis_client import redis_client
 from app.config.supabase_client import supabase
 
 
@@ -15,13 +15,13 @@ async def fetch_account_data(telefone_empresa: str) -> Dict[str, Any]:
     cache_key = f"{ACCOUNT_DATA}:{telefone_empresa}"
 
     # 1. Tenta buscar no cache Redis
-    cached_data = await redis.get(cache_key)
+    cached_data = await redis_client.get(cache_key)
     if cached_data:
         try:
             return json.loads(cached_data)
         except json.JSONDecodeError:
             logger.warning(f"[fetch_account_data] JSON inválido no cache Redis: {cache_key}")
-            await redis.delete(cache_key)
+            await redis_client.delete(cache_key)
 
     # 2. Busca no Supabase
     try:
@@ -35,7 +35,7 @@ async def fetch_account_data(telefone_empresa: str) -> Dict[str, Any]:
                 return build_default_account_config()
 
             # 3. Cacheia no Redis
-            await redis.set(cache_key, json.dumps(account_config), ex=CACHE_TTL_SECONDS)
+            await redis_client.set(cache_key, json.dumps(account_config), ex=CACHE_TTL_SECONDS)
             return account_config
         else:
             logger.warning(f"[fetch_account_data] Nenhum dado encontrado para {telefone_empresa}")
