@@ -10,6 +10,7 @@ class WebhookMessage(BaseModel):
     senderName: Optional[str] = None
     text: Optional[dict] = None
     audio: Optional[dict] = None
+    mensagem: Optional[str] = None
 
     @property
     def mensagem_texto(self) -> Optional[str]:
