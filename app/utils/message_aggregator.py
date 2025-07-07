@@ -49,7 +49,6 @@ async def _espera_e_retorna(redis_key: str, task_key: str, future: asyncio.Futur
         logger.info(f"[⏳ Esperando 5s] {task_key}")
         await asyncio.sleep(5)
 
-        redis_client = await get_redis()
         mensagens = await redis_client.lrange(redis_key, 0, -1)
         logger.info(f"[📦 Mensagens encontradas] {mensagens}")
 
