@@ -22,3 +22,6 @@ class WebhookMessage(BaseModel):
         if self.audio:
             return self.audio.get("audioUrl")
         return None
+    
+    def agrupar_mensagem(self, texto_agrupado: str):
+        self.mensagem = texto_agrupado

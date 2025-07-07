@@ -51,34 +51,14 @@ def build_default_account_config() -> ConfiguracaoClinica:
         funil=[]
     )
 
-async def conversation_pipeline(webhook: WebhookMessage, tempo_espera_debounce: int) -> dict:
-
-    # Extrai mensagem e limpa espaços
+async def conversation_pipeline(webhook: WebhookMessage, tempo_espera_debounce: int) -> WebhookMessage:
     mensagem = await extract_message_content(webhook)
 
-    # Proteção real: nunca chama debounce se mensagem não for válida
     if not mensagem:
         logger.info(f"[🔕 IGNORADO] Mensagem vazia | {webhook.phone}")
-        return {
-            "status": "ignored",
-            "mensagem": "",
-            "numero": webhook.phone,
-            "telefone_empresa": webhook.connectedPhone,
-            "momento": webhook.momment,
-            "nome_cliente": webhook.senderName,
-            "is_group": webhook.isGroup,
-            "from_me": webhook.fromMe
-        }
+        webhook.mensagem = ""
+        return webhook
     
     agrupado = await debounce_and_collect(webhook.phone, webhook.connectedPhone, mensagem, tempo_espera_debounce)
-
-    return {
-        "status": "ok",
-        "mensagem": agrupado,
-        "numero": webhook.phone,
-        "telefone_empresa": webhook.connectedPhone,
-        "momento": webhook.momment,
-        "nome_cliente": webhook.senderName,
-        "is_group": webhook.isGroup,
-        "from_me": webhook.fromMe
-    }
+    webhook.agrupar_mensagem(agrupado)
+    return webhook
