@@ -1,7 +1,6 @@
 import redis.asyncio as aioredis
-import os
 
-REDIS_URL = os.environ.get("REDIS_URL")
+from app.config.config import REDIS_URL
 
 # Conecta ao Redis
 redis_client = aioredis.from_url(

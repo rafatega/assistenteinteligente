@@ -1,6 +1,6 @@
 from app.models.receive_message import WebhookMessage
 from app.services.openai_service import extract_message_content
-from app.services.funnel_orchestrator import process_funnel_message
+from app.services.funnel_orchestrator import process_user_funnel
 from app.utils.logger import logger
 from app.utils.message_aggregator import debounce_and_collect
 
@@ -43,8 +43,9 @@ async def process_message(body: dict) -> dict:
 
     # Só processa se a mensagem não for do próprio bot/assistente
     if not conversation['from_me']:
-        funnel_result = await process_funnel_message(conversation['numero'], conversation['mensagem'], conversation['nome_cliente'])
-        pass
+        funnel_result = await process_user_funnel(conversation['mensagem'], conversation['numero'], conversation['telefone_empresa'], conversation['nome_cliente'])
+        logger.info(f"[🚀 FUNIL PROCESSADO] {conversation['numero']} - {conversation['telefone_empresa']}: {funnel_result}")
+    else:
+        logger.info(f"[🔕 IGNORADO] Mensagem do próprio bot/assistente: {conversation['numero']} - {conversation['telefone_empresa']}")
 
-    return conversation
 

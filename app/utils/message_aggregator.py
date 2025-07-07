@@ -4,7 +4,7 @@ from redis.asyncio import Redis
 from datetime import datetime
 
 from app.utils.logger import logger
-from app.config.redis import redis_client
+from app.config.redis_client import redis_client
 
 debounce_tasks = {}
 debounce_futures = {}
