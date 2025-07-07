@@ -57,5 +57,6 @@ def build_default_account_config() -> Dict[str, Any]:
 # -- Funnel Orchestration
 async def process_user_funnel(mensagem: str, numero: str, telefone_empresa: str, nome_cliente: str) -> str:
     account_data = await fetch_account_data(telefone_empresa)
+    logger.info(f"[🚀 FUNIL ORCHESTRATOR] Processando funil: {account_data}")
     #lead_data = await fetch_lead_data(numero, telefone_empresa)
     return 'Finalizado com sucesso'
