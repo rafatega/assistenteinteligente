@@ -9,18 +9,23 @@ async def conversation_pipeline(webhook: WebhookMessage) -> dict:
     mensagem = await extract_message_content(webhook)
 
     # Proteção real: nunca chama debounce se mensagem não for válida
-    if not mensagem or webhook.isGroup or webhook.fromMe:
+    if not mensagem:
         logger.info(f"[🔕 IGNORADO] Mensagem vazia | {webhook.phone}")
-        return {"status": "ignored"}
+        return {
+            "status": "ignored",
+            "mensagem": "",
+            "numero": webhook.phone,
+            "telefone_empresa": webhook.connectedPhone,
+            "momento": webhook.momment,
+            "nome_cliente": webhook.senderName,
+            "is_group": webhook.isGroup,
+            "from_me": webhook.fromMe
+        }
     
     agrupado = await debounce_and_collect(webhook.phone, webhook.connectedPhone, mensagem)
 
-    logger.info(
-        f"[✅ MENSAGEM AGRUPADA] {webhook.phone} - {webhook.connectedPhone}: {agrupado} | "
-        f"{webhook.momment} | {webhook.senderName} | isGroup: {webhook.isGroup} | fromMe: {webhook.fromMe}"
-    )
-
     return {
+        "status": "ok",
         "mensagem": agrupado,
         "numero": webhook.phone,
         "telefone_empresa": webhook.connectedPhone,
