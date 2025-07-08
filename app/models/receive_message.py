@@ -76,3 +76,34 @@ class FunnelInfo:
             prompt_base=data.get("prompt_base", ""),
             funil=funil
         )
+    
+    def to_tracking_dict(self, preenchidos: Dict[str, Any] = None, estado_atual: Optional[str] = None) -> Dict[str, Any]:
+        preenchidos = preenchidos or {}
+        return {
+            "state": estado_atual or "",
+            "data": {
+                etapa.id: preenchidos.get(etapa.id, None)
+                for etapa in self.funil
+            }
+        }
+
+from dataclasses import dataclass, field
+from typing import Dict, Any
+
+@dataclass
+class UserInfo:
+    state: str
+    data: Dict[str, Any] = field(default_factory=dict)
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> "UserInfo":
+        return UserInfo(
+            state=data.get("state", ""),
+            data=data.get("data", {})
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "state": self.state,
+            "data": self.data
+        }
