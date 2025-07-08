@@ -7,10 +7,7 @@ async def process_message(body: dict) -> dict:
     config_info = await fetch_config_info(webhook.connectedPhone)
     webhook_info =  await webhook_treatment(webhook, config_info.tempo_espera_debounce)
     funnel_info = await fetch_funnel_info(webhook.connectedPhone)
-    try:
-        user_info = await fetch_user_info(webhook.connectedPhone, webhook.phone)
-    except RuntimeError:
-        user_info = await create_initial_user_info(webhook.connectedPhone, webhook.phone, funnel_info)
+    user_info = await fetch_user_info(webhook.connectedPhone, webhook.phone, funnel_info)
 
     # Só processa se a mensagem não for do próprio bot/assistente
     if not webhook_info.fromMe:

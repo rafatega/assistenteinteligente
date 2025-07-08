@@ -105,7 +105,7 @@ async def webhook_treatment(webhook: WebhookMessage, tempo_espera_debounce: int)
     return webhook
 
 
-async def fetch_user_info(telefone_cliente: str, telefone_usuario: str) -> UserInfo:
+async def fetch_user_info(telefone_cliente: str, telefone_usuario: str, funnel_info: FunnelInfo) -> UserInfo:
     SUPABASE_USER_INFO_TABLE = "user_data"
     USER_INFO = "user_info"
     CACHE_TTL_SECONDS = 14400  # 4h
@@ -121,7 +121,7 @@ async def fetch_user_info(telefone_cliente: str, telefone_usuario: str) -> UserI
             logger.warning(f"[fetch_user_info] JSON inválido no cache Redis: {cache_key}")
             await redis_client.delete(cache_key)
 
-    # 2. Busca no Supabase (fallback - se existir histórico)
+    # 2. Busca no Supabase
     try:
         res = supabase.table(SUPABASE_USER_INFO_TABLE)\
             .select(USER_INFO)\
@@ -132,21 +132,20 @@ async def fetch_user_info(telefone_cliente: str, telefone_usuario: str) -> UserI
             .execute()
 
         if res.data:
-            user_info = res.data[0].get(USER_INFO) if res.data else None
-            if not user_info:
-                logger.error(f"[fetch_user_info] Campo '{USER_INFO}' ausente no Supabase para telefone: {telefone_usuario}")
-                raise RuntimeError(f"Erro crítico: Campo '{USER_INFO}' ausente para telefone_usuario {telefone_usuario}")
+            user_info_raw = res.data[0].get(USER_INFO)
+            if user_info_raw:
+                user_info_obj = UserInfo.from_dict(user_info_raw)
+                user_info_obj = sync_user_info_with_funnel(user_info_obj, funnel_info)
 
-            await redis_client.set(cache_key, json.dumps(user_info), ex=CACHE_TTL_SECONDS)
-            return UserInfo.from_dict(user_info)
+                await redis_client.set(cache_key, json.dumps(user_info_obj.to_dict()), ex=CACHE_TTL_SECONDS)
+                return user_info_obj
 
-        logger.warning(f"[fetch_user_info] Nenhum dado encontrado para telefone_usuario: {telefone_usuario}")
     except Exception as e:
         logger.exception(f"[fetch_user_info] Erro ao consultar Supabase: {e}")
-        raise RuntimeError(f"Erro crítico: Falha ao carregar user_info para telefone_usuario {telefone_usuario}")
 
-    # 3. Fallback
-    raise RuntimeError(f"Erro crítico: Falha ao carregar user_info para telefone_usuario {telefone_usuario}")
+    # 3. Fallback: criar novo registro se nenhum for encontrado ou erro
+    logger.info(f"[fetch_user_info] Criando novo user_info para {telefone_usuario}")
+    return await create_initial_user_info(telefone_cliente, telefone_usuario, funnel_info)
 
 async def create_initial_user_info(telefone_cliente: str, telefone_usuario: str, funnel_info: FunnelInfo) -> UserInfo:
     SUPABASE_USER_INFO_TABLE = "user_data"
@@ -179,3 +178,14 @@ async def create_initial_user_info(telefone_cliente: str, telefone_usuario: str,
         logger.exception(f"[create_initial_user_info] Erro ao criar/atualizar user_info: {e}")
         raise RuntimeError("Erro ao criar ou atualizar o estado inicial do usuário")
 
+def sync_user_info_with_funnel(user_info: UserInfo, funnel_info: FunnelInfo) -> UserInfo:
+    funnel_ids = [etapa.id for etapa in funnel_info.funil]
+
+    updated_data = {
+        etapa_id: user_info.data.get(etapa_id, None)
+        for etapa_id in funnel_ids
+    }
+
+    updated_state = user_info.state if user_info.state in funnel_ids else funnel_ids[0] if funnel_ids else ""
+
+    return UserInfo(state=updated_state, data=updated_data)
