@@ -129,7 +129,6 @@ async def fetch_user_info(telefone_cliente: str, telefone_usuario: str) -> UserI
             .eq("telefone_usuario", telefone_usuario)\
             .order("id", desc=True)\
             .limit(1)\
-            .single()\
             .execute()
 
         if res.data:
