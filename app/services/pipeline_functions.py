@@ -132,7 +132,7 @@ async def fetch_user_info(telefone_cliente: str, telefone_usuario: str) -> UserI
             .execute()
 
         if res.data:
-            user_info = res.data.get(USER_INFO)
+            user_info = res.data[0].get(USER_INFO) if res.data else None
             if not user_info:
                 logger.error(f"[fetch_user_info] Campo '{USER_INFO}' ausente no Supabase para telefone: {telefone_usuario}")
                 raise RuntimeError(f"Erro crítico: Campo '{USER_INFO}' ausente para telefone_usuario {telefone_usuario}")
