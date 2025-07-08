@@ -1,13 +1,12 @@
 import json
 from app.config.redis_client import redis_client
 from app.config.supabase_client import supabase
-from app.models.receive_message import WebhookMessage
-from app.models.account_config import ConfiguracaoClinica
+from app.models.receive_message import WebhookMessage, ConfiguracaoCliente
 from app.services.openai_service import extract_message_content
 from app.utils.logger import logger
 from app.utils.message_aggregator import debounce_and_collect
 
-async def fetch_account_data(telefone_empresa: str) -> ConfiguracaoClinica:
+async def fetch_account_data(telefone_empresa: str) -> ConfiguracaoCliente:
     ACCOUNT_DATA = "account_data"
     CACHE_TTL_SECONDS = 3600  # 1 hora
     
@@ -17,7 +16,7 @@ async def fetch_account_data(telefone_empresa: str) -> ConfiguracaoClinica:
     cached_data = await redis_client.get(cache_key)
     if cached_data:
         try:
-            return ConfiguracaoClinica.from_dict(json.loads(cached_data))
+            return ConfiguracaoCliente.from_dict(json.loads(cached_data))
         except json.JSONDecodeError:
             logger.warning(f"[fetch_account_data] JSON inválido no cache Redis: {cache_key}")
             await redis_client.delete(cache_key)
@@ -33,7 +32,7 @@ async def fetch_account_data(telefone_empresa: str) -> ConfiguracaoClinica:
                 return build_default_account_config()
 
             await redis_client.set(cache_key, json.dumps(account_config), ex=CACHE_TTL_SECONDS)
-            return ConfiguracaoClinica.from_dict(account_config)
+            return ConfiguracaoCliente.from_dict(account_config)
 
         logger.warning(f"[fetch_account_data] Nenhum dado encontrado para {telefone_empresa}")
     except Exception as e:
@@ -43,8 +42,8 @@ async def fetch_account_data(telefone_empresa: str) -> ConfiguracaoClinica:
     return build_default_account_config()
 
 
-def build_default_account_config() -> ConfiguracaoClinica:
-    return ConfiguracaoClinica(
+def build_default_account_config() -> ConfiguracaoCliente:
+    return ConfiguracaoCliente(
         telefone_empresa="",
         prompt_base="Olá! Sou a assistente virtual Diana, recepcionista da Dra. Fluvia.",
         tempo_espera_debounce=5,

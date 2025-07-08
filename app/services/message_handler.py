@@ -8,12 +8,12 @@ async def process_message(body: dict) -> dict:
     conversation =  await conversation_pipeline(webhook, account_data.tempo_espera_debounce)
 
     # Só processa se a mensagem não for do próprio bot/assistente
-    if not conversation['from_me']:
+    if not conversation.fromMe:
         #funnel_result = await process_user_funnel(conversation['mensagem'], conversation['numero'], conversation['telefone_empresa'], conversation['nome_cliente'])
         logger.info(f"[🚀 ACCOUNT DATA]\n {account_data} \n[🚀 ACCOUNT DATA]")
         logger.info(f"[🚀 CONVERSATION PIPELINE]\n {conversation} \n[🚀 CONVERSATION PIPELINE]")
         
     else:
-        logger.info(f"[🔕 IGNORADO] Mensagem do próprio bot/assistente: {conversation['numero']} - {conversation['telefone_empresa']}")
+        logger.info(f"[🔕 IGNORADO] Mensagem do próprio bot/assistente: {conversation.phone} - {conversation.connectedPhone}")
 
 
