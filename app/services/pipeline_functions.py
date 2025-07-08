@@ -56,8 +56,8 @@ async def conversation_pipeline(webhook: WebhookMessage, tempo_espera_debounce: 
     if not mensagem:
         logger.info(f"[🔕 IGNORADO] Mensagem vazia | {webhook.phone}")
         webhook.mensagem = ""
-        return webhook
+        return WebhookMessage.from_dict(webhook)
     
     agrupado = await debounce_and_collect(webhook.phone, webhook.connectedPhone, mensagem, tempo_espera_debounce)
     webhook.agrupar_mensagem(agrupado)
-    return webhook
+    return WebhookMessage.from_dict(webhook)
