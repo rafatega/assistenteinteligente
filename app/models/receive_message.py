@@ -29,27 +29,50 @@ class WebhookMessage(BaseModel):
         self.mensagem = texto_agrupado
 
 @dataclass
+class ConfigInfo:
+    tempo_espera_debounce: int
+    pinecone_index_name: str
+    pinecone_namespace: str
+    zapi_instance_id: str
+    zapi_token: str
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> "ConfigInfo":
+        return ConfigInfo(
+            tempo_espera_debounce=data.get("tempo_espera_debounce", 8),
+            pinecone_index_name=data.get("pinecone_index_name", ""),
+            pinecone_namespace=data.get("pinecone_namespace", ""),
+            zapi_instance_id=data.get("zapi_instance_id", ""),
+            zapi_token=data.get("zapi_token", "")
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "tempo_espera_debounce": self.tempo_espera_debounce,
+            "pinecone_index_name": self.pinecone_index_name,
+            "pinecone_namespace": self.pinecone_namespace,
+            "zapi_instance_id": self.zapi_instance_id,
+            "zapi_token": self.zapi_token,
+        }
+
+@dataclass
 class EtapaFunil:
     id: str
     prompt: str
     obrigatorio: bool
-
+    aliases: Optional[Dict[str, Any]] = None
+    regex: Optional[List[str]] = None
 
 @dataclass
-class ConfiguracaoCliente:
-    telefone_empresa: str
+class FunnelInfo:
     prompt_base: str
-    tempo_espera_debounce: int
     funil: List[EtapaFunil]
 
     @staticmethod
-    def from_dict(data: Dict[str, Any]) -> "ConfiguracaoCliente":
-        funil_data = data.get("account_info", {}).get("funil", [])
-        funil = [EtapaFunil(**item) for item in funil_data]
-
-        return ConfiguracaoCliente(
-            telefone_empresa=data.get("telefone_empresa", ""),
-            prompt_base=data.get("account_info", {}).get("prompt_base", ""),
-            tempo_espera_debounce=data.get("account_info", {}).get("tempo_espera_debounce", 5),
+    def from_dict(data: Dict[str, Any]) -> "FunnelInfo":
+        funil_raw = data.get("funil", [])
+        funil = [EtapaFunil(**item) for item in funil_raw]
+        return FunnelInfo(
+            prompt_base=data.get("prompt_base", ""),
             funil=funil
         )

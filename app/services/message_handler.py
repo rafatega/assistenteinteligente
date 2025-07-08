@@ -1,20 +1,21 @@
 from app.models.receive_message import WebhookMessage
-from app.services.pipeline_functions import fetch_account_data, conversation_pipeline
+from app.services.pipeline_functions import fetch_config_info, fetch_funnel_info, conversation_pipeline
 from app.utils.logger import logger
 
 async def process_message(body: dict) -> dict:
     webhook = WebhookMessage(**body)
-    account_data = await fetch_account_data(webhook.connectedPhone)
-    conversation =  await conversation_pipeline(webhook, account_data.tempo_espera_debounce)
+    config_info = await fetch_config_info(webhook.connectedPhone)
+    webhook_info =  await conversation_pipeline(webhook, config_info.tempo_espera_debounce)
+    funnel_info = await fetch_funnel_info(webhook.connectedPhone)
 
     # Só processa se a mensagem não for do próprio bot/assistente
-    if not conversation.fromMe:
+    if not webhook_info.fromMe:
         #funnel_result = await process_user_funnel(conversation['mensagem'], conversation['numero'], conversation['telefone_empresa'], conversation['nome_cliente'])
-        logger.info(f"[🚀 ACCOUNT DATA]\n {account_data} \n[🚀 ACCOUNT DATA]")
-        logger.info(f"[🚀 CONVERSATION PIPELINE]\n {conversation} \n[🚀 CONVERSATION PIPELINE]")
-        logger.info(f"[🚀 MENSAGEM AGRUPADA]\n {conversation.mensagem} \n[🚀 MENSAGEM AGRUPADA]")
+        logger.info(f"[🚀 CONFIG_INFO ]\n {config_info} \n[🚀 CONFIG_INFO ]")
+        logger.info(f"[🚀 WEBHOOK_INFO ]\n {webhook_info} \n[🚀 WEBHOOK_INFO ]")
+        logger.info(f"[🚀 FUNNEL INFO ]\n {funnel_info} \n[🚀 FUNNEL INFO ]")
         
     else:
-        logger.info(f"[🔕 IGNORADO] Mensagem do próprio bot/assistente: {conversation.phone} - {conversation.connectedPhone}")
+        logger.info(f"[🔕 IGNORADO] Mensagem do próprio bot/assistente: {webhook_info.phone} - {webhook_info.connectedPhone}")
 
 
