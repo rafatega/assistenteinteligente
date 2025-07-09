@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 class WebhookMessage(BaseModel):
     connectedPhone: str
@@ -86,9 +86,6 @@ class FunnelInfo:
                 for etapa in self.funil
             }
         }
-
-from dataclasses import dataclass, field
-from typing import Dict, Any
 
 @dataclass
 class UserInfo:

@@ -11,7 +11,7 @@ async def process_message(body: dict) -> dict:
     webhook_info =  await webhook_treatment(webhook, config_info.tempo_espera_debounce)
     funnel_info = await fetch_funnel_info(webhook.connectedPhone)
     user_info = await fetch_user_info(webhook.connectedPhone, webhook.phone, funnel_info)
-    #new_user_info = await calculate_user_info(webhook_info.mensagem, user_info, funnel_info)
+    updated_user_info = await calculate_user_info(webhook_info.mensagem, user_info, funnel_info)
     #history_info = await fetch_history_info(webhook.connectedPhone, webhook.phone)
 
     # Só processa se a mensagem não for do próprio bot/assistente
@@ -21,6 +21,7 @@ async def process_message(body: dict) -> dict:
         logger.info(f"[🚀 WEBHOOK_INFO ]\n {webhook_info} \n[🚀 WEBHOOK_INFO ]")
         logger.info(f"[🚀 FUNNEL INFO ]\n {funnel_info} \n[🚀 FUNNEL INFO ]")
         logger.info(f"[🚀 USER INFO ]\n {user_info} \n[🚀 USER INFO ]")
+        logger.info(f"[🚀 UPDATED USER INFO ]\n {updated_user_info} \n[🚀 UPDATED USER INFO ]")
         
     else:
         logger.info(f"[🔕 IGNORADO] Mensagem do próprio bot/assistente: {webhook_info.phone} - {webhook_info.connectedPhone}")
