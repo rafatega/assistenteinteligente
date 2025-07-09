@@ -60,6 +60,8 @@ class EtapaFunil:
     id: str
     prompt: str
     obrigatorio: bool
+    permite_nova_entrada: bool = False
+    fallback_llm: Optional[Any] = None
     aliases: Optional[Dict[str, Any]] = None
     regex: Optional[List[str]] = None
 
