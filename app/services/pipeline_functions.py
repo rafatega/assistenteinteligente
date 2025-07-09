@@ -103,7 +103,7 @@ async def webhook_treatment(webhook: WebhookMessage, tempo_espera_debounce: int)
         )
 
     webhook.agrupar_mensagem(mensagem)
-    return mensagem
+    return webhook
 
 
 async def fetch_user_info(telefone_cliente: str, telefone_usuario: str, funnel_info: FunnelInfo) -> UserInfo:
