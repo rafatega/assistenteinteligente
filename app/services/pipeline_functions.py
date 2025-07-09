@@ -190,3 +190,19 @@ def sync_user_info_with_funnel(user_info: UserInfo, funnel_info: FunnelInfo) -> 
     updated_state = user_info.state if user_info.state in funnel_ids else funnel_ids[0] if funnel_ids else ""
 
     return UserInfo(state=updated_state, data=updated_data)
+
+async def calculate_user_info(mensagem: str, user_info: UserInfo, funnel_info: FunnelInfo) -> UserInfo:
+    """
+    Calcula e atualiza as informações do usuário com base na mensagem recebida e também retorna o prompt do funnel para o próximo passo do funil.
+    """
+    # Aqui você pode implementar a lógica de cálculo com base na mensagem
+    # Por exemplo, atualizar o estado do usuário ou adicionar dados específicos
+
+    # Exemplo simples: apenas atualiza o estado para o primeiro estado do funil
+    if funnel_info.funil:
+        user_info.state = funnel_info.funil[0].id
+
+    # Atualiza os dados do usuário com a mensagem
+    user_info.data['ultima_mensagem'] = mensagem
+
+    return user_info

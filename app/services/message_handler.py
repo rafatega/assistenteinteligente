@@ -1,13 +1,18 @@
+import time
 from app.models.receive_message import WebhookMessage
-from app.services.pipeline_functions import fetch_config_info, fetch_funnel_info, webhook_treatment, fetch_user_info, create_initial_user_info
+from app.services.pipeline_functions import fetch_config_info, fetch_funnel_info, webhook_treatment, fetch_user_info, calculate_user_info
 from app.utils.logger import logger
 
 async def process_message(body: dict) -> dict:
+    start_time = time.monotonic()
+
     webhook = WebhookMessage(**body)
     config_info = await fetch_config_info(webhook.connectedPhone)
     webhook_info =  await webhook_treatment(webhook, config_info.tempo_espera_debounce)
     funnel_info = await fetch_funnel_info(webhook.connectedPhone)
     user_info = await fetch_user_info(webhook.connectedPhone, webhook.phone, funnel_info)
+    #new_user_info = await calculate_user_info(webhook_info.mensagem, user_info, funnel_info)
+    #history_info = await fetch_history_info(webhook.connectedPhone, webhook.phone)
 
     # Só processa se a mensagem não for do próprio bot/assistente
     if not webhook_info.fromMe:
@@ -19,5 +24,8 @@ async def process_message(body: dict) -> dict:
         
     else:
         logger.info(f"[🔕 IGNORADO] Mensagem do próprio bot/assistente: {webhook_info.phone} - {webhook_info.connectedPhone}")
+    
+    elapsed = time.monotonic() - start_time
+    logger.info(f"[⏱️ Tempo de execução total]: {elapsed:.3f} segundos")
 
 
