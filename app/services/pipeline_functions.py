@@ -196,7 +196,13 @@ def sync_user_info_with_funnel(user_info: UserInfo, funnel_info: FunnelInfo) -> 
 
 import json
 
-async def calculate_user_info(mensagem: str, user_info: UserInfo, funnel_info: FunnelInfo, telefone_cliente: str, telefone_usuario: str) -> Tuple[UserInfo, str]:
+async def calculate_user_info(
+    mensagem: str,
+    user_info: UserInfo,
+    funnel_info: FunnelInfo,
+    telefone_cliente: str,
+    telefone_usuario: str
+) -> Tuple[UserInfo, str]:
     """
     Atualiza múltiplos campos do user_info com base em uma única mensagem.
     - Primeiro percorre todo o funil para tentar extrair todos os dados possíveis.
@@ -207,7 +213,7 @@ async def calculate_user_info(mensagem: str, user_info: UserInfo, funnel_info: F
     CACHE_TTL_SECONDS = 14400
     mensagem_lower = mensagem.lower()
     primeiro_prompt = None
-    original_info = user_info.to_dict()  # Para checar alterações
+    original_info = copy.deepcopy(user_info.to_dict())
 
     for etapa in funnel_info.funil:
         estado_id = etapa.id
@@ -257,12 +263,14 @@ async def calculate_user_info(mensagem: str, user_info: UserInfo, funnel_info: F
                 else:
                     user_info.data[estado_id] = "Nao informado"
 
-    # Salvar se houver mudança
+    # Salvar se houve mudança
     updated_info = user_info.to_dict()
-    if updated_info != original_info:
+    if json.dumps(updated_info, sort_keys=True) != json.dumps(original_info, sort_keys=True):
         cache_key = f"user_info:{telefone_cliente}:{telefone_usuario}"
         await redis_client.set(cache_key, json.dumps(updated_info), ex=CACHE_TTL_SECONDS)
-        logger.info(f"[calculate_user_info] Dados atualizados no Redis para {telefone_usuario}")
+        logger.info(f"[calculate_user_info] 🔄 Dados atualizados no Redis para {telefone_usuario}")
+    else:
+        logger.info(f"[calculate_user_info] 🟰 Nenhuma alteração detectada para {telefone_usuario}")
 
     # Próximo estado pendente
     if primeiro_prompt:
@@ -274,16 +282,3 @@ async def calculate_user_info(mensagem: str, user_info: UserInfo, funnel_info: F
     user_info.state = "esperando_humano"
     etapa_final = next((e for e in funnel_info.funil if e.id == "esperando_humano"), None)
     return user_info, etapa_final.prompt if etapa_final else "Muito obrigado! Em breve a Jaqueline irá te atender por aqui."
-
-
-async def save_user_info_if_changed(telefone_cliente: str, telefone_usuario: str, old_info: UserInfo, new_info: UserInfo, ttl_seconds: int = 14400):
-    """Atualiza o Redis somente se o user_info tiver sido alterado"""
-    old_json = json.dumps(old_info.to_dict(), sort_keys=True)
-    new_json = json.dumps(new_info.to_dict(), sort_keys=True)
-
-    if old_json != new_json:
-        cache_key = f"user_info:{telefone_cliente}:{telefone_usuario}"
-        await redis_client.set(cache_key, new_json, ex=ttl_seconds)
-        logger.info(f"[save_user_info_if_changed] Atualizado user_info para {telefone_usuario}")
-    else:
-        logger.debug(f"[save_user_info_if_changed] Nenhuma alteração detectada para {telefone_usuario}")
