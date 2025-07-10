@@ -91,18 +91,21 @@ class FunnelInfo:
 
 @dataclass
 class UserInfo:
-    state: str
+    state: Optional[str] = None
     data: Dict[str, Any] = field(default_factory=dict)
+    saudacao: Optional[str] = None
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> "UserInfo":
         return UserInfo(
             state=data.get("state", ""),
-            data=data.get("data", {})
+            data=data.get("data", {}),
+            saudacao=data.get("saudacao")
         )
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "state": self.state,
-            "data": self.data
+            "data": self.data,
+            "saudacao": self.saudacao
         }
