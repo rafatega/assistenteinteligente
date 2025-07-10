@@ -158,7 +158,7 @@ async def create_initial_user_info(telefone_cliente: str, telefone_usuario: str,
     CACHE_TTL_SECONDS = 14400
 
     # Pega o primeiro estado do funil
-    initial_state = funnel_info.funil[0].id if funnel_info.funil else ""
+    initial_state = None
     tracking_dict = funnel_info.to_tracking_dict(estado_atual=initial_state)
     initial_info = UserInfo(**tracking_dict)
 
@@ -194,8 +194,6 @@ def sync_user_info_with_funnel(user_info: UserInfo, funnel_info: FunnelInfo) -> 
     updated_state = user_info.state if user_info.state in funnel_ids else funnel_ids[0] if funnel_ids else ""
 
     return UserInfo(state=updated_state, data=updated_data)
-
-import json
 
 async def calculate_user_info(mensagem: str, user_info: UserInfo, funnel_info: FunnelInfo, telefone_cliente: str, telefone_usuario: str) -> Tuple[UserInfo, str]:
     """
