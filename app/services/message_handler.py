@@ -11,7 +11,7 @@ async def process_message(body: dict) -> dict:
     webhook_info =  await webhook_treatment(webhook, config_info.tempo_espera_debounce)
     funnel_info = await fetch_funnel_info(webhook.connectedPhone)
     user_info = await fetch_user_info(webhook.connectedPhone, webhook.phone, funnel_info)
-    updated_user_info = await calculate_user_info(webhook_info.mensagem, user_info, funnel_info)
+    updated_user_info = await calculate_user_info(webhook_info.mensagem, user_info, funnel_info, webhook.connectedPhone, webhook.phone)
     #history_info = await fetch_history_info(webhook.connectedPhone, webhook.phone)
 
     # Só processa se a mensagem não for do próprio bot/assistente

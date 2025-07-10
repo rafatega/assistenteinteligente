@@ -194,7 +194,9 @@ def sync_user_info_with_funnel(user_info: UserInfo, funnel_info: FunnelInfo) -> 
 
     return UserInfo(state=updated_state, data=updated_data)
 
-async def calculate_user_info(mensagem: str, user_info: UserInfo, funnel_info: FunnelInfo) -> Tuple[UserInfo, str]:
+import json
+
+async def calculate_user_info(mensagem: str, user_info: UserInfo, funnel_info: FunnelInfo, telefone_cliente: str, telefone_usuario: str) -> Tuple[UserInfo, str]:
     """
     Atualiza múltiplos campos do user_info com base em uma única mensagem.
     - Primeiro percorre todo o funil para tentar extrair todos os dados possíveis.
@@ -202,15 +204,16 @@ async def calculate_user_info(mensagem: str, user_info: UserInfo, funnel_info: F
     - Se um campo for obrigatório e ainda não preenchido, retorna o prompt dele.
     - Se não for obrigatório e não foi extraído, envia prompt uma vez antes de marcar como 'Nao informado'.
     """
+    CACHE_TTL_SECONDS = 14400
     mensagem_lower = mensagem.lower()
-    primeiro_prompt = None  # Guardar o prompt do primeiro estado pendente
+    primeiro_prompt = None
+    original_info = user_info.to_dict()  # Para checar alterações
 
     for etapa in funnel_info.funil:
         estado_id = etapa.id
         valor_atual = user_info.data.get(estado_id)
         pode_validar = valor_atual is None or etapa.permite_nova_entrada
 
-        # Ignora se não pode validar
         if not pode_validar:
             continue
 
@@ -244,25 +247,43 @@ async def calculate_user_info(mensagem: str, user_info: UserInfo, funnel_info: F
             user_info.data[estado_id] = valor_extraido
 
         elif valor_atual is None:
-            # Se ainda não preencheu, pode ser o primeiro a precisar de resposta
             if etapa.obrigatorio:
                 if not primeiro_prompt:
                     primeiro_prompt = (estado_id, etapa.prompt)
             else:
-                # Se não for obrigatório, mostra prompt uma vez antes de marcar como "Nao informado"
                 if user_info.state != estado_id:
                     if not primeiro_prompt:
                         primeiro_prompt = (estado_id, etapa.prompt)
                 else:
                     user_info.data[estado_id] = "Nao informado"
 
-    # Definir o próximo estado pendente
+    # Salvar se houver mudança
+    updated_info = user_info.to_dict()
+    if updated_info != original_info:
+        cache_key = f"user_info:{telefone_cliente}:{telefone_usuario}"
+        await redis_client.set(cache_key, json.dumps(updated_info), ex=CACHE_TTL_SECONDS)
+        logger.info(f"[calculate_user_info] Dados atualizados no Redis para {telefone_usuario}")
+
+    # Próximo estado pendente
     if primeiro_prompt:
         estado_id, prompt = primeiro_prompt
         user_info.state = estado_id
         return user_info, prompt
 
-    # Tudo preenchido
+    # Finalizado
     user_info.state = "esperando_humano"
     etapa_final = next((e for e in funnel_info.funil if e.id == "esperando_humano"), None)
     return user_info, etapa_final.prompt if etapa_final else "Muito obrigado! Em breve a Jaqueline irá te atender por aqui."
+
+
+async def save_user_info_if_changed(telefone_cliente: str, telefone_usuario: str, old_info: UserInfo, new_info: UserInfo, ttl_seconds: int = 14400):
+    """Atualiza o Redis somente se o user_info tiver sido alterado"""
+    old_json = json.dumps(old_info.to_dict(), sort_keys=True)
+    new_json = json.dumps(new_info.to_dict(), sort_keys=True)
+
+    if old_json != new_json:
+        cache_key = f"user_info:{telefone_cliente}:{telefone_usuario}"
+        await redis_client.set(cache_key, new_json, ex=ttl_seconds)
+        logger.info(f"[save_user_info_if_changed] Atualizado user_info para {telefone_usuario}")
+    else:
+        logger.debug(f"[save_user_info_if_changed] Nenhuma alteração detectada para {telefone_usuario}")
