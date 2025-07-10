@@ -1,6 +1,7 @@
 import json
 import re
 from typing import Tuple
+import copy
 from app.config.redis_client import redis_client
 from app.config.supabase_client import supabase
 from app.models.receive_message import WebhookMessage, ConfigInfo, FunnelInfo, UserInfo
