@@ -69,6 +69,7 @@ class EtapaFunil:
 class FunnelInfo:
     prompt_base: str
     funil: List[EtapaFunil]
+    prompt_apresentacao_inicial: str
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> "FunnelInfo":
@@ -76,7 +77,8 @@ class FunnelInfo:
         funil = [EtapaFunil(**item) for item in funil_raw]
         return FunnelInfo(
             prompt_base=data.get("prompt_base", ""),
-            funil=funil
+            funil=funil,
+            prompt_apresentacao_inicial=data.get("prompt_apresentacao_inicial", "")
         )
     
     def to_tracking_dict(self, preenchidos: Dict[str, Any] = None, estado_atual: Optional[str] = None) -> Dict[str, Any]:
