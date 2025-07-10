@@ -197,13 +197,7 @@ def sync_user_info_with_funnel(user_info: UserInfo, funnel_info: FunnelInfo) -> 
 
 import json
 
-async def calculate_user_info(
-    mensagem: str,
-    user_info: UserInfo,
-    funnel_info: FunnelInfo,
-    telefone_cliente: str,
-    telefone_usuario: str
-) -> Tuple[UserInfo, str]:
+async def calculate_user_info(mensagem: str, user_info: UserInfo, funnel_info: FunnelInfo, telefone_cliente: str, telefone_usuario: str) -> Tuple[UserInfo, str]:
     """
     Atualiza múltiplos campos do user_info com base em uma única mensagem.
     - Primeiro percorre todo o funil para tentar extrair todos os dados possíveis.
@@ -214,7 +208,7 @@ async def calculate_user_info(
     CACHE_TTL_SECONDS = 14400
     mensagem_lower = mensagem.lower()
     primeiro_prompt = None
-    original_info = copy.deepcopy(user_info.to_dict())
+    original_info = copy.deepcopy(user_info.to_dict())  # clone total antes
 
     for etapa in funnel_info.funil:
         estado_id = etapa.id
@@ -226,7 +220,6 @@ async def calculate_user_info(
 
         valor_extraido = None
 
-        # REGEX
         if etapa.regex:
             for pattern in etapa.regex:
                 match = re.search(pattern, mensagem_lower)
@@ -235,7 +228,6 @@ async def calculate_user_info(
                     valor_extraido = list(grupos.values())[0]
                     break
 
-        # ALIASES
         if not valor_extraido and etapa.aliases:
             for chave, regras in etapa.aliases.items():
                 frases = regras.get("frases") or []
@@ -249,7 +241,6 @@ async def calculate_user_info(
                     valor_extraido = chave
                     break
 
-        # Atualização de valor
         if valor_extraido:
             user_info.data[estado_id] = valor_extraido
 
@@ -264,22 +255,23 @@ async def calculate_user_info(
                 else:
                     user_info.data[estado_id] = "Nao informado"
 
-    # Salvar se houve mudança
-    updated_info = user_info.to_dict()
-    if json.dumps(updated_info, sort_keys=True) != json.dumps(original_info, sort_keys=True):
-        cache_key = f"user_info:{telefone_cliente}:{telefone_usuario}"
-        await redis_client.set(cache_key, json.dumps(updated_info), ex=CACHE_TTL_SECONDS)
-        logger.info(f"[calculate_user_info] 🔄 Dados atualizados no Redis para {telefone_usuario}")
-    else:
-        logger.info(f"[calculate_user_info] 🟰 Nenhuma alteração detectada para {telefone_usuario}")
-
-    # Próximo estado pendente
+    # Ajuste de estado
     if primeiro_prompt:
         estado_id, prompt = primeiro_prompt
         user_info.state = estado_id
-        return user_info, prompt
+    else:
+        user_info.state = "esperando_humano"
 
-    # Finalizado
-    user_info.state = "esperando_humano"
+    # Comparação e atualização
+    updated_info = user_info.to_dict()
+    if updated_info != original_info:
+        cache_key = f"user_info:{telefone_cliente}:{telefone_usuario}"
+        await redis_client.set(cache_key, json.dumps(updated_info), ex=CACHE_TTL_SECONDS)
+        logger.info(f"[calculate_user_info] Dados atualizados no Redis para {telefone_usuario}")
+
+    # Resposta ao usuário
+    if primeiro_prompt:
+        return user_info, primeiro_prompt[1]
+
     etapa_final = next((e for e in funnel_info.funil if e.id == "esperando_humano"), None)
     return user_info, etapa_final.prompt if etapa_final else "Muito obrigado! Em breve a Jaqueline irá te atender por aqui."
