@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Tuple
+from typing import Tuple, Any, Dict, List
 import copy
 from app.config.redis_client import redis_client
 from app.config.supabase_client import supabase
@@ -94,7 +94,7 @@ async def fetch_funnel_info(telefone_cliente: str) -> FunnelInfo:
 
 async def webhook_treatment(webhook: WebhookMessage, tempo_espera_debounce: int) -> WebhookMessage:
     mensagem = await extract_message_content(webhook)
-
+    
     if not mensagem:
         logger.info(f"[🔕 IGNORADO] Mensagem vazia | {webhook.phone}")
         webhook.mensagem = ""
@@ -273,3 +273,41 @@ async def calculate_user_info(mensagem: str, user_info: UserInfo, funnel_info: F
 
     etapa_final = next((e for e in funnel_info.funil if e.id == "esperando_humano"), None)
     return user_info, etapa_final.prompt if etapa_final else "Muito obrigado! Em breve a Jaqueline irá te atender por aqui."
+
+
+async def fetch_history_info(telefone_cliente: str, telefone_usuario: str) -> List[Dict[str, Any]]:
+    """
+    Busca o histórico de conversas no Redis para o par (telefone_cliente, telefone_usuario).
+    Em caso de falha de acesso ou valor ausente/corrompido, retorna apenas o prompt sistêmico inicial.
+    """
+    HISTORY_KEY_TEMPLATE = "history:{telefone_cliente}:{telefone_usuario}"
+    DEFAULT_HISTORY: Dict[str, str] = {
+    "role": "system",
+    "content": "O cliente não tem histórico de interações com a empresa."
+    }
+
+    key = HISTORY_KEY_TEMPLATE.format(
+        telefone_cliente=telefone_cliente,
+        telefone_usuario=telefone_usuario,
+    )
+
+    try:
+        raw = await redis_client.get(key)
+        if raw:
+            history = json.loads(raw)
+            if isinstance(history, list):
+                return history
+            # Dado inesperado no cache: log e limpeza
+            logger.warning(
+                "[fetch_history_info] Valor inválido no Redis para '%s': tipo %s",
+                key, type(history).__name__
+            )
+            await redis_client.delete(key)
+    except Exception as err:
+        logger.error(
+            "[fetch_history_info] Falha ao acessar Redis para chave '%s': %s",
+            key, err
+        )
+
+    # Se não encontrou nada ou houve erro/corrupção, retorna o prompt inicial
+    return [DEFAULT_HISTORY.copy()]
