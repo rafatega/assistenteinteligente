@@ -8,7 +8,7 @@ from app.models.receive_message import WebhookMessage, ConfigInfo, FunnelInfo, U
 from app.services.openai_service import extract_message_content
 from app.utils.logger import logger
 from app.utils.message_aggregator import debounce_and_collect
-from app.models.history_service import HistoryService
+from app.models.history_service import RawHistoryService
 
 async def fetch_config_info(telefone_cliente: str) -> ConfigInfo:
     SUPABASE_ACCOUNT_DATA = "account_data"
@@ -95,7 +95,10 @@ async def fetch_funnel_info(telefone_cliente: str) -> FunnelInfo:
 
 async def webhook_treatment(webhook: WebhookMessage, tempo_espera_debounce: int) -> WebhookMessage:
     mensagem = await extract_message_content(webhook)
-    
+
+    # Salva a mensagem bruta no histórico, sem o debounce.
+    await RawHistoryService().record(cliente=webhook.connectedPhone,usuario=webhook.phone,role="user" if not webhook.fromMe else "assistant",content=mensagem)
+
     if not mensagem:
         logger.info(f"[🔕 IGNORADO] Mensagem vazia | {webhook.phone}")
         webhook.mensagem = ""

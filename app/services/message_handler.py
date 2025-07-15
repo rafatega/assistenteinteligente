@@ -1,15 +1,12 @@
 import time
 from app.models.receive_message import WebhookMessage
 from app.services.pipeline_functions import fetch_config_info, fetch_funnel_info, webhook_treatment, fetch_user_info, calculate_user_info
-from app.models.history_service import RawHistoryService, ChatHistoryService
 from app.utils.logger import logger
 
 async def process_message(body: dict) -> dict:
     start_time = time.monotonic()
 
     webhook = WebhookMessage(**body)
-    # Salva a mensagem bruta no histórico, sem o debounce.
-    await RawHistoryService().record(cliente=webhook.connectedPhone,usuario=webhook.phone,role="user" if not webhook.fromMe else "assistant",content=webhook.mensagem)
     config_info = await fetch_config_info(webhook.connectedPhone)
     webhook_info =  await webhook_treatment(webhook, config_info.tempo_espera_debounce)
     funnel_info = await fetch_funnel_info(webhook.connectedPhone)
