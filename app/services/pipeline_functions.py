@@ -97,7 +97,7 @@ async def webhook_treatment(webhook: WebhookMessage, tempo_espera_debounce: int)
     mensagem = await extract_message_content(webhook)
 
     # Salva a mensagem bruta no histórico, sem o debounce.
-    await RawHistoryService().record(cliente=webhook.connectedPhone,usuario=webhook.phone,role="user" if not webhook.fromMe else "assistant",content=mensagem)
+    #await RawHistoryService().record(cliente=webhook.connectedPhone,usuario=webhook.phone,role="user" if not webhook.fromMe else "assistant",content=mensagem)
 
     if not mensagem:
         logger.info(f"[🔕 IGNORADO] Mensagem vazia | {webhook.phone}")
