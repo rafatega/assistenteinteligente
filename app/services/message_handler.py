@@ -18,7 +18,7 @@ async def process_message(body: dict) -> dict:
     if not webhook_info.fromMe:
         #funnel_result = await process_user_funnel(conversation['mensagem'], conversation['numero'], conversation['telefone_empresa'], conversation['nome_cliente'])
         logger.info(f"[🚀 CONFIG_INFO ]\n {config_info} \n[🚀 CONFIG_INFO ]")
-        logger.info(f"[🚀 HISTORY_INFO ]\n {webhook_info} \n[🚀 HISTORY_INFO ]")
+        logger.info(f"[🚀 HISTORY_INFO ]\n {history_info} \n[🚀 HISTORY_INFO ]")
         logger.info(f"[🚀 WEBHOOK_INFO ]\n {webhook_info} \n[🚀 WEBHOOK_INFO ]")
         #logger.info(f"[🚀 FUNNEL INFO ]\n {funnel_info} \n[🚀 FUNNEL INFO ]")
         logger.info(f"[🚀 USER INFO ]\n {user_info} \n[🚀 USER INFO ]")
