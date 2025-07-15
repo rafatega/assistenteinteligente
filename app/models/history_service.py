@@ -1,4 +1,4 @@
-import json
+"""import json
 import logging
 from typing import Any, Dict, List, TypedDict
 
@@ -14,10 +14,10 @@ class HistoryItem(TypedDict):
 
 
 class RawHistoryService:
-    """
+    """"""
     Grava *todos* os fragmentos na ordem que chegam,
     sem debounce, para uso em frontend tipo WhatsApp.
-    """
+    """"""
     _KEY_TPL = "raw_history:{cliente}:{usuario}"
     _MAX_RAW_ENTRIES = 1000  # para não crescer sem controle
 
@@ -48,9 +48,9 @@ class RawHistoryService:
 
 
 class ChatHistoryService:
-    """
+    """"""
     History “limpo” para montar prompt: só turnos de user/assistant.
-    """
+    """"""
     _KEY_TPL = "chat_history:{cliente}:{usuario}"
     _TTL_SECONDS = 4 * 60 * 60    # 4h
     _MAX_ENTRIES = 6
@@ -88,13 +88,13 @@ class ChatHistoryService:
             logger.error("[ChatHistoryService.save] erro em %s: %s", key, err)
 
     async def add_message(self, cliente: str, usuario: str, mensagem: str, from_me: bool) -> List[HistoryItem]:
-        """
+        """"""
         - busca histórico
         - inicializa com SYSTEM se vazio
         - adiciona USER ou ASSISTANT
         - trunca & persiste
         - retorna histórico atualizado
-        """
+        """"""
         history = await self.fetch(cliente, usuario)
         if not history:
             history = [self._SYSTEM_PROMPT.copy()]
@@ -104,4 +104,4 @@ class ChatHistoryService:
         history = history[-self._MAX_ENTRIES :]
 
         await self.save(cliente, usuario, history)
-        return history
+        return history"""

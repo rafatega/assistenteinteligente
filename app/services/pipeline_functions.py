@@ -8,7 +8,7 @@ from app.models.receive_message import WebhookMessage, ConfigInfo, FunnelInfo, U
 from app.services.openai_service import extract_message_content
 from app.utils.logger import logger
 from app.utils.message_aggregator import debounce_and_collect
-from app.models.history_service import RawHistoryService
+#from app.models.history_service import RawHistoryService
 
 async def fetch_config_info(telefone_cliente: str) -> ConfigInfo:
     SUPABASE_ACCOUNT_DATA = "account_data"
