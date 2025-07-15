@@ -8,6 +8,7 @@ from app.models.receive_message import WebhookMessage, ConfigInfo, FunnelInfo, U
 from app.services.openai_service import extract_message_content
 from app.utils.logger import logger
 from app.utils.message_aggregator import debounce_and_collect
+from app.models.history_service import HistoryService
 
 async def fetch_config_info(telefone_cliente: str) -> ConfigInfo:
     SUPABASE_ACCOUNT_DATA = "account_data"
@@ -104,7 +105,6 @@ async def webhook_treatment(webhook: WebhookMessage, tempo_espera_debounce: int)
         mensagem = await debounce_and_collect(
             webhook.phone, webhook.connectedPhone, mensagem, tempo_espera_debounce
         )
-
     webhook.agrupar_mensagem(mensagem)
     return webhook
 
@@ -275,11 +275,11 @@ async def calculate_user_info(mensagem: str, user_info: UserInfo, funnel_info: F
     return user_info, etapa_final.prompt if etapa_final else "Muito obrigado! Em breve a Jaqueline irá te atender por aqui."
 
 
-async def fetch_history_info(telefone_cliente: str, telefone_usuario: str) -> List[Dict[str, Any]]:
-    """
+"""async def fetch_history_info(telefone_cliente: str, telefone_usuario: str) -> List[Dict[str, Any]]:
+    """"""
     Busca o histórico de conversas no Redis para o par (telefone_cliente, telefone_usuario).
     Em caso de falha de acesso ou valor ausente/corrompido, retorna apenas o prompt sistêmico inicial.
-    """
+    """"""
     HISTORY_KEY_TEMPLATE = "history:{telefone_cliente}:{telefone_usuario}"
     DEFAULT_HISTORY: Dict[str, str] = {
     "role": "system",
@@ -311,3 +311,41 @@ async def fetch_history_info(telefone_cliente: str, telefone_usuario: str) -> Li
 
     # Se não encontrou nada ou houve erro/corrupção, retorna o prompt inicial
     return [DEFAULT_HISTORY.copy()]
+
+async def save_history_info(telefone_cliente: str, telefone_usuario: str, mensagem: str, from_me: bool, history) -> None:
+    # Constantes de cache
+    HISTORY_KEY_TEMPLATE = "history:{telefone_cliente}:{telefone_usuario}"
+    HISTORY_TTL_SECONDS = 14400  # 4 horas
+    MAX_HISTORY_ENTRIES = 6
+    """"""
+    Carrega o histórico, adiciona a mensagem como 'user' ou 'assistant',
+    trunca para as últimas N entradas e salva de volta no Redis com TTL.
+    """"""
+    key = HISTORY_KEY_TEMPLATE.format(
+        telefone_cliente=telefone_cliente,
+        telefone_usuario=telefone_usuario,
+    )
+
+    # 1. Busca histórico atual (pode retornar lista vazia)
+    history = await fetch_history_info(redis_client, telefone_cliente, telefone_usuario)
+
+    # 2. Determina o role e adiciona a nova entrada
+    role = "assistant" if from_me else "user"
+    history.append({"role": role, "content": mensagem})
+
+    # 3. Trunca para as últimas entradas
+    truncated = history[-MAX_HISTORY_ENTRIES :]
+
+    # 4. Persiste no Redis com TTL
+    try:
+        await redis_client.set(
+            key,
+            json.dumps(truncated),
+            ex=HISTORY_TTL_SECONDS
+        )
+    except Exception as err:
+        logger.error(
+            "[save_history_info] Não foi possível salvar histórico para '%s': %s",
+            key, err
+        )
+        # Se for um erro crítico, você pode re-raise ou alertar aqui."""
