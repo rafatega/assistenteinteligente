@@ -10,6 +10,7 @@ class HistoricoConversas:
         self.key = f"{self.PREFIX}{telefone_cliente}:{telefone_usuario}"
         self.tentativas = 3
         self.mensagens = []
+        self.cache_ttl_seconds = 14400
 
     async def carregar(self):
         for tentativa in range(self.tentativas):
@@ -36,7 +37,7 @@ class HistoricoConversas:
         mensagens_finais = self.mensagens[-max_mensagens:]
         for tentativa in range(self.tentativas):
             try:
-                await self.redis.set(self.key, json.dumps(mensagens_finais))
+                await self.redis.set(self.key, json.dumps(mensagens_finais), ex=self.cache_ttl_seconds)
                 return
             except Exception as e:
                 logger.error(f"[{self.key}] Erro Redis SET ({tentativa+1}): {e}")
