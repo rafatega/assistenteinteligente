@@ -1,7 +1,7 @@
 import time
-import openai
+import openai, pinecone
 from app.config.redis_client import redis_client
-from app.config.config import API_KEY_OPENAI
+from app.config.config import API_KEY_OPENAI, API_KEY_PINECONE
 from app.models.receive_message import WebhookMessage
 from app.models.history_service import HistoricoConversas
 from app.models.search_chunks import BuscadorChunks
@@ -9,6 +9,7 @@ from app.services.pipeline_functions import fetch_config_info, fetch_funnel_info
 from app.utils.logger import logger
 
 openai.api_key = API_KEY_OPENAI
+pinecone_client = pinecone.Pinecone(api_key=API_KEY_PINECONE)
 
 async def process_message(body: dict) -> dict:
     start_time = time.monotonic()
@@ -18,7 +19,9 @@ async def process_message(body: dict) -> dict:
 
     config_info = await fetch_config_info(webhook.connectedPhone)
 
-    chunks = BuscadorChunks(config_info.pinecone_index_name, config_info.pinecone_namespace)
+    pinecone_index = pinecone_client.Index(config_info.pinecone_index_name)
+
+    chunks = BuscadorChunks(pinecone_index, config_info.pinecone_namespace)
 
     webhook_info =  await webhook_treatment(webhook, config_info.tempo_espera_debounce)
     await chunks.buscar(webhook_info.mensagem)

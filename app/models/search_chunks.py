@@ -9,7 +9,7 @@ class BuscadorChunks:
         self.modelo = modelo
         self.top_k = top_k
         self.tentativas = tentativas
-        self.best_chunks = []
+        self.best_chunks: List[str] = []
 
     async def buscar(self, query: str) -> List[str]:
         for tentativa in range(self.tentativas):
