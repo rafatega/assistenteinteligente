@@ -19,6 +19,7 @@ async def process_message(body: dict) -> dict:
 
     await historico.carregar()
     historico.adicionar_interacao("user", webhook_info.mensagem)
+    await historico.salvar()
 
     #history_save = await save_history_info(webhook.connectedPhone, webhook.phone, webhook_info.mensagem, webhook_info.fromMe, history_info)
 
