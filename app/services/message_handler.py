@@ -18,6 +18,7 @@ async def process_message(body: dict) -> dict:
     updated_user_info, updated_prompt = await calculate_user_info(webhook_info.mensagem, user_info, funnel_info, webhook.connectedPhone, webhook.phone)
 
     await historico.carregar()
+    await historico.adicionar_interacao("user", webhook_info.mensagem)
 
     #history_save = await save_history_info(webhook.connectedPhone, webhook.phone, webhook_info.mensagem, webhook_info.fromMe, history_info)
 
