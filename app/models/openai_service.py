@@ -39,7 +39,7 @@ class ChatResponder:
 {self.input.user_data or "Sem informações adicionais do paciente."}
 
 [CONTEXTO DA CLÍNICA]:
-{self.input.best_chunks or "Sem informações adicionais da clínica."}
+{"\n".join(self.input.best_chunks) or "Sem informações adicionais da clínica."}
 """
 
     def build_messages(self, system_content: str) -> List[Dict]:
@@ -52,6 +52,7 @@ class ChatResponder:
         
         contexto_cru = self.build_system_content().strip()
         contexto_completo = self.build_messages(contexto_cru)
+        logger.info(contexto_completo)
 
         for attempt in range(self.tentativas):
             model = self.modelo if attempt < self.tentativas - 1 else self.modelo_fallback
