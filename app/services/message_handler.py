@@ -47,6 +47,7 @@ async def process_message(body: dict) -> dict:
     await responder.generate()
 
     prepara_envio = MensagemDispatcher(webhook.phone, responder.resposta, config_info.zapi_instance_id, config_info.zapi_token, zapi_phone_header)
+    logger.info(prepara_envio)
     prepara_envio.enviar_resposta()
 
     historico.adicionar_interacao("user", webhook_info.mensagem)
@@ -67,7 +68,7 @@ async def process_message(body: dict) -> dict:
         #logger.info(f"[🚀 HISTORY_INFO ]\n {historico.mensagens} \n[🚀 HISTORY_INFO ]")
         #logger.info(f"[🚀 BEST_CHUNKS ]\n {chunks.best_chunks} \n[🚀 BEST_CHUNKS ]")
         logger.info(f"[🚀 RESPOSTA ]\n {responder.resposta} \n[🚀 RESPOSTA ]")
-        logger.info(f"[🚀🚀✅ ENVIADO ✅🚀🚀]")
+        #logger.info(f"[🚀🚀✅ ENVIADO ✅🚀🚀]")
         
     else:
         logger.info(f"[🔕 IGNORADO] Mensagem do próprio bot/assistente: {webhook_info.phone} - {webhook_info.connectedPhone}")
