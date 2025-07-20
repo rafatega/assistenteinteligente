@@ -1,16 +1,18 @@
 import time
 import openai, pinecone
 from app.config.redis_client import redis_client
-from app.config.config import API_KEY_OPENAI, API_KEY_PINECONE
+from app.config.config import API_KEY_OPENAI, API_KEY_PINECONE, ZAPI_PHONE_HEADER
 from app.models.receive_message import WebhookMessage
 from app.models.history_service import HistoricoConversas
 from app.models.search_chunks import BuscadorChunks
 from app.models.openai_service import ChatInput, ChatResponder
+from app.models.send_message import MensagemDispatcher
 from app.services.pipeline_functions import fetch_config_info, fetch_funnel_info, webhook_treatment, fetch_user_info, calculate_user_info
 from app.utils.logger import logger
 
 openai.api_key = API_KEY_OPENAI
 pinecone_client = pinecone.Pinecone(api_key=API_KEY_PINECONE)
+zapi_phone_header = ZAPI_PHONE_HEADER
 
 async def process_message(body: dict) -> dict:
     start_time = time.monotonic()
@@ -44,7 +46,11 @@ async def process_message(body: dict) -> dict:
     responder = ChatResponder(chat_input)
     await responder.generate()
 
+    prepara_envio = MensagemDispatcher(webhook.phone, responder.resposta, config_info.zapi_instance_id, config_info.zapi_token, zapi_phone_header)
+    prepara_envio.enviar_resposta()
+
     historico.adicionar_interacao("user", webhook_info.mensagem)
+    historico.adicionar_interacao("system", responder.resposta)
     await historico.salvar()
 
     #history_save = await save_history_info(webhook.connectedPhone, webhook.phone, webhook_info.mensagem, webhook_info.fromMe, history_info)
@@ -61,6 +67,7 @@ async def process_message(body: dict) -> dict:
         #logger.info(f"[🚀 HISTORY_INFO ]\n {historico.mensagens} \n[🚀 HISTORY_INFO ]")
         #logger.info(f"[🚀 BEST_CHUNKS ]\n {chunks.best_chunks} \n[🚀 BEST_CHUNKS ]")
         logger.info(f"[🚀 RESPOSTA ]\n {responder.resposta} \n[🚀 RESPOSTA ]")
+        logger.info(f"[🚀🚀✅ ENVIADO ✅🚀🚀]")
         
     else:
         logger.info(f"[🔕 IGNORADO] Mensagem do próprio bot/assistente: {webhook_info.phone} - {webhook_info.connectedPhone}")

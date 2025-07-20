@@ -28,6 +28,8 @@ class WebhookMessage(BaseModel):
     def agrupar_mensagem(self, texto_agrupado: str):
         self.mensagem = texto_agrupado
 
+    
+
 @dataclass
 class ConfigInfo:
     tempo_espera_debounce: int
