@@ -5,6 +5,7 @@ from app.config.config import API_KEY_OPENAI, API_KEY_PINECONE
 from app.models.receive_message import WebhookMessage
 from app.models.history_service import HistoricoConversas
 from app.models.search_chunks import BuscadorChunks
+from app.models.openai_service import ChatInput, ChatResponder
 from app.services.pipeline_functions import fetch_config_info, fetch_funnel_info, webhook_treatment, fetch_user_info, calculate_user_info
 from app.utils.logger import logger
 
@@ -31,6 +32,18 @@ async def process_message(body: dict) -> dict:
     updated_user_info, updated_prompt = await calculate_user_info(webhook_info.mensagem, user_info, funnel_info, webhook.connectedPhone, webhook.phone)
 
     await historico.carregar()
+
+    chat_input = ChatInput(
+        mensagem=webhook_info.mensagem,
+        best_chunks=chunks.best_chunks,
+        historico=historico.mensagens,
+        prompt_base=funnel_info.prompt_base,
+        prompt_state=updated_prompt,
+        user_data=updated_user_info
+    )
+    responder = ChatResponder(chat_input)
+    await responder.generate()
+
     historico.adicionar_interacao("user", webhook_info.mensagem)
     await historico.salvar()
 
@@ -45,8 +58,9 @@ async def process_message(body: dict) -> dict:
         #logger.info(f"[🚀 USER INFO ]\n {user_info} \n[🚀 USER INFO ]")
         #logger.info(f"[🚀 UPDATED USER INFO ]\n {updated_user_info} \n[🚀 UPDATED USER INFO ]")
         #logger.info(f"[🚀 UPDATED PROMPT ]\n {updated_prompt} \n[🚀 UPDATED PROMPT ]")
-        logger.info(f"[🚀 HISTORY_INFO ]\n {historico.mensagens} \n[🚀 HISTORY_INFO ]")
-        logger.info(f"[🚀 BEST_CHUNKS ]\n {chunks.best_chunks} \n[🚀 BEST_CHUNKS ]")
+        #logger.info(f"[🚀 HISTORY_INFO ]\n {historico.mensagens} \n[🚀 HISTORY_INFO ]")
+        #logger.info(f"[🚀 BEST_CHUNKS ]\n {chunks.best_chunks} \n[🚀 BEST_CHUNKS ]")
+        logger.info(f"[🚀 RESPOSTA ]\n {responder.resposta} \n[🚀 RESPOSTA ]")
         
     else:
         logger.info(f"[🔕 IGNORADO] Mensagem do próprio bot/assistente: {webhook_info.phone} - {webhook_info.connectedPhone}")
