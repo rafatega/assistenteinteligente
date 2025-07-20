@@ -47,7 +47,7 @@ async def process_message(body: dict) -> dict:
     await responder.generate()
 
     prepara_envio = MensagemDispatcher(webhook.phone, responder.resposta, config_info.zapi_instance_id, config_info.zapi_token, zapi_phone_header)
-    logger.info(prepara_envio)
+    logger.info(f"OBJETO MENSAGEM DISPATCHER: {prepara_envio}")
     prepara_envio.enviar_resposta()
 
     historico.adicionar_interacao("user", webhook_info.mensagem)
