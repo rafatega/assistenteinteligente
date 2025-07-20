@@ -48,7 +48,7 @@ async def process_message(body: dict) -> dict:
 
     prepara_envio = MensagemDispatcher(webhook.phone, responder.resposta, config_info.zapi_instance_id, config_info.zapi_token, zapi_phone_header)
     logger.info(f"OBJETO MENSAGEM DISPATCHER:\n numero: {prepara_envio.numero}\n segmentos: {prepara_envio.segmentos}\n url: {prepara_envio.url}\n headers: {prepara_envio.headers}\n retries: {prepara_envio.retries}\n delay_typing: {prepara_envio.delay_typing}\n delay_between: {prepara_envio.delay_between}\n timeout: {prepara_envio.timeout}\n client: {prepara_envio.client}")
-    prepara_envio.enviar_resposta()
+    await prepara_envio.enviar_resposta()
 
     historico.adicionar_interacao("user", webhook_info.mensagem)
     historico.adicionar_interacao("system", responder.resposta)
