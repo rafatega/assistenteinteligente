@@ -22,12 +22,12 @@ async def process_message(body: dict) -> dict:
 
     config_info = await fetch_config_info(webhook.connectedPhone)
 
-    pinecone_index = pinecone_client.Index(config_info.pinecone_index_name)
+    #pinecone_index = pinecone_client.Index(config_info.pinecone_index_name)
 
-    chunks = BuscadorChunks(pinecone_index, config_info.pinecone_namespace)
+    #chunks = BuscadorChunks(pinecone_index, config_info.pinecone_namespace)
 
     webhook_info =  await webhook_treatment(webhook, config_info.tempo_espera_debounce)
-    await chunks.buscar(webhook_info.mensagem)
+    #await chunks.buscar(webhook_info.mensagem)
 
     funnel_info = await fetch_funnel_info(webhook.connectedPhone)
     user_info = await fetch_user_info(webhook.connectedPhone, webhook.phone, funnel_info)
@@ -35,7 +35,34 @@ async def process_message(body: dict) -> dict:
 
     await historico.carregar()
 
-    chat_input = ChatInput(
+    #chat_input = ChatInput(
+    #    mensagem=webhook_info.mensagem,
+    #    best_chunks=chunks.best_chunks,
+    #    historico=historico.mensagens,
+    #    prompt_base=funnel_info.prompt_base,
+    #    prompt_state=updated_prompt,
+    #    user_data=updated_user_info
+    #)
+    #responder = ChatResponder(chat_input)
+    #await responder.generate()
+
+    #prepara_envio = MensagemDispatcher(webhook.phone, responder.resposta, config_info.zapi_instance_id, config_info.zapi_token, zapi_phone_header)
+    #logger.info(f"OBJETO MENSAGEM DISPATCHER:\n numero: {prepara_envio.numero}\n segmentos: {prepara_envio.segmentos}\n url: {prepara_envio.url}\n headers: {prepara_envio.headers}\n retries: {prepara_envio.retries}\n delay_typing: {prepara_envio.delay_typing}\n delay_between: {prepara_envio.delay_between}\n timeout: {prepara_envio.timeout}\n client: {prepara_envio.client}")
+    #await prepara_envio.enviar_resposta()
+
+    #historico.adicionar_interacao("user", webhook_info.mensagem)
+    #historico.adicionar_interacao("system", responder.resposta)
+    #await historico.salvar()
+
+    #history_save = await save_history_info(webhook.connectedPhone, webhook.phone, webhook_info.mensagem, webhook_info.fromMe, history_info)
+
+    # Só processa se a mensagem não for do próprio bot/assistente
+    if not webhook_info.fromMe:
+        pinecone_index = pinecone_client.Index(config_info.pinecone_index_name)
+        chunks = BuscadorChunks(pinecone_index, config_info.pinecone_namespace)
+        await chunks.buscar(webhook_info.mensagem)
+
+        chat_input = ChatInput(
         mensagem=webhook_info.mensagem,
         best_chunks=chunks.best_chunks,
         historico=historico.mensagens,
@@ -43,21 +70,20 @@ async def process_message(body: dict) -> dict:
         prompt_state=updated_prompt,
         user_data=updated_user_info
     )
-    responder = ChatResponder(chat_input)
-    await responder.generate()
+        responder = ChatResponder(chat_input)
+        await responder.generate()
 
-    prepara_envio = MensagemDispatcher(webhook.phone, responder.resposta, config_info.zapi_instance_id, config_info.zapi_token, zapi_phone_header)
-    logger.info(f"OBJETO MENSAGEM DISPATCHER:\n numero: {prepara_envio.numero}\n segmentos: {prepara_envio.segmentos}\n url: {prepara_envio.url}\n headers: {prepara_envio.headers}\n retries: {prepara_envio.retries}\n delay_typing: {prepara_envio.delay_typing}\n delay_between: {prepara_envio.delay_between}\n timeout: {prepara_envio.timeout}\n client: {prepara_envio.client}")
-    await prepara_envio.enviar_resposta()
+        prepara_envio = MensagemDispatcher(webhook.phone, responder.resposta, config_info.zapi_instance_id, config_info.zapi_token, zapi_phone_header)
+        logger.info(f"OBJETO MENSAGEM DISPATCHER:\n numero: {prepara_envio.numero}\n segmentos: {prepara_envio.segmentos}\n url: {prepara_envio.url}\n headers: {prepara_envio.headers}\n retries: {prepara_envio.retries}\n delay_typing: {prepara_envio.delay_typing}\n delay_between: {prepara_envio.delay_between}\n timeout: {prepara_envio.timeout}\n client: {prepara_envio.client}")
+        await prepara_envio.enviar_resposta()
 
-    historico.adicionar_interacao("user", webhook_info.mensagem)
-    historico.adicionar_interacao("system", responder.resposta)
-    await historico.salvar()
+        historico.adicionar_interacao("user", webhook_info.mensagem)
+        await historico.salvar()
 
-    #history_save = await save_history_info(webhook.connectedPhone, webhook.phone, webhook_info.mensagem, webhook_info.fromMe, history_info)
+    elif webhook_info.fromMe:
+        historico.adicionar_interacao("system", webhook_info.mensagem)
+        await historico.salvar()
 
-    # Só processa se a mensagem não for do próprio bot/assistente
-    if not webhook_info.fromMe:
         #funnel_result = await process_user_funnel(conversation['mensagem'], conversation['numero'], conversation['telefone_empresa'], conversation['nome_cliente'])
         #logger.info(f"[🚀 CONFIG_INFO ]\n {config_info} \n[🚀 CONFIG_INFO ]")
         #logger.info(f"[🚀 WEBHOOK_INFO ]\n {webhook_info} \n[🚀 WEBHOOK_INFO ]")
@@ -67,7 +93,7 @@ async def process_message(body: dict) -> dict:
         #logger.info(f"[🚀 UPDATED PROMPT ]\n {updated_prompt} \n[🚀 UPDATED PROMPT ]")
         #logger.info(f"[🚀 HISTORY_INFO ]\n {historico.mensagens} \n[🚀 HISTORY_INFO ]")
         #logger.info(f"[🚀 BEST_CHUNKS ]\n {chunks.best_chunks} \n[🚀 BEST_CHUNKS ]")
-        logger.info(f"[🚀 RESPOSTA ]\n {responder.resposta} \n[🚀 RESPOSTA ]")
+        #logger.info(f"[🚀 RESPOSTA ]\n {responder.resposta} \n[🚀 RESPOSTA ]")
         #logger.info(f"[🚀🚀✅ ENVIADO ✅🚀🚀]")
         
     else:
