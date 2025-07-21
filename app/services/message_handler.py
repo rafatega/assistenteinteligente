@@ -62,8 +62,6 @@ async def process_message(body: dict) -> dict:
         pinecone_index = pinecone_client.Index(config_info.pinecone_index_name)
         chunks = BuscadorChunks(pinecone_index, config_info.pinecone_namespace)
 
-        historico.adicionar_interacao("user", webhook_info.mensagem)
-
         webhook_info =  await webhook_treatment(webhook, config_info.tempo_espera_debounce)
         await chunks.buscar(webhook_info.mensagem)
 
@@ -86,7 +84,7 @@ async def process_message(body: dict) -> dict:
         logger.info(f"OBJETO MENSAGEM DISPATCHER:\n numero: {prepara_envio.numero}\n segmentos: {prepara_envio.segmentos}\n url: {prepara_envio.url}\n headers: {prepara_envio.headers}\n retries: {prepara_envio.retries}\n delay_typing: {prepara_envio.delay_typing}\n delay_between: {prepara_envio.delay_between}\n timeout: {prepara_envio.timeout}\n client: {prepara_envio.client}")
         await prepara_envio.enviar_resposta()
 
-        #historico.adicionar_interacao("user", webhook_info.mensagem)
+        historico.adicionar_interacao("user", webhook_info.mensagem)
         await historico.salvar()
 
     elif webhook.fromMe:
