@@ -1,6 +1,12 @@
 from pydantic import BaseModel
+import requests
+import openai
+import asyncio
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass, field
+
+from app.config.redis_client import redis_client
+from app.utils.logger import logger
 
 class WebhookMessage(BaseModel):
     connectedPhone: str
@@ -11,7 +17,6 @@ class WebhookMessage(BaseModel):
     senderName: Optional[str] = None
     text: Optional[dict] = None
     audio: Optional[dict] = None
-    mensagem: Optional[str] = None
 
     @property
     def mensagem_texto(self) -> Optional[str]:
@@ -24,39 +29,99 @@ class WebhookMessage(BaseModel):
         if self.audio:
             return self.audio.get("audioUrl")
         return None
-    
-    def agrupar_mensagem(self, texto_agrupado: str):
-        self.mensagem = texto_agrupado
 
-    
+debounce_tasks = {}
+debounce_futures = {}
+class WebhookProcessor:
+    def __init__(self, webhook: WebhookMessage, debounce_timeout: int):
+        self.webhook = webhook
+        self.debounce_timeout = debounce_timeout
+        self.mensagem_consolidada = ""
 
-@dataclass
-class ConfigInfo:
-    tempo_espera_debounce: int
-    pinecone_index_name: str
-    pinecone_namespace: str
-    zapi_instance_id: str
-    zapi_token: str
+    async def processar(self) -> WebhookMessage:
+        mensagem = await self.extrair_mensagem()
 
-    @staticmethod
-    def from_dict(data: Dict[str, Any]) -> "ConfigInfo":
-        return ConfigInfo(
-            tempo_espera_debounce=data.get("tempo_espera_debounce", 8),
-            pinecone_index_name=data.get("pinecone_index_name", ""),
-            pinecone_namespace=data.get("pinecone_namespace", ""),
-            zapi_instance_id=data.get("zapi_instance_id", ""),
-            zapi_token=data.get("zapi_token", "")
+        if not mensagem:
+            logger.info(f"[🔕 IGNORADO] Mensagem vazia | {self.webhook.phone}")
+            mensagem = ""
+
+        if self.debounce_timeout > 0:
+            mensagem = await self.debounce_and_collect(mensagem)
+
+        self.mensagem_consolidada = mensagem
+
+    async def extrair_mensagem(self) -> Optional[str]:
+        if mensagem := self.webhook.mensagem_texto:
+            return mensagem.strip()
+
+        if audio := self.webhook.url_audio:
+            try:
+                r = requests.get(audio)
+                with open("/tmp/audio.ogg", "wb") as f:
+                    f.write(r.content)
+
+                with open("/tmp/audio.ogg", "rb") as audio_file:
+                    transcription = openai.Audio.transcribe("whisper-1", audio_file)
+                return transcription.get("text", "").strip()
+            except Exception as e:
+                logger.exception(f"[ERRO AO TRANSCREVER ÁUDIO] {e}")
+                return None
+        return None
+
+    async def debounce_and_collect(self, mensagem: str) -> str:
+        redis_key = f"debounce:{self.webhook.phone}:{self.webhook.connectedPhone}"
+        task_key = f"{self.webhook.phone}:{self.webhook.connectedPhone}"
+
+        await redis_client.rpush(redis_key, mensagem)
+
+        # Cancela tarefas anteriores
+        if task_key in debounce_tasks:
+            debounce_tasks[task_key].cancel()
+            debounce_tasks.pop(task_key, None)
+
+        if task_key in debounce_futures:
+            debounce_futures.pop(task_key, None)
+
+        future = asyncio.get_event_loop().create_future()
+        debounce_futures[task_key] = future
+
+        debounce_tasks[task_key] = asyncio.create_task(
+            self.espera_e_retorna(redis_key, task_key, future)
         )
 
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "tempo_espera_debounce": self.tempo_espera_debounce,
-            "pinecone_index_name": self.pinecone_index_name,
-            "pinecone_namespace": self.pinecone_namespace,
-            "zapi_instance_id": self.zapi_instance_id,
-            "zapi_token": self.zapi_token,
-        }
+        return await future
 
+    async def espera_e_retorna(self, redis_key: str, task_key: str, future: asyncio.Future):
+        try:
+            await asyncio.sleep(self.debounce_timeout)
+            mensagens = await redis_client.lrange(redis_key, 0, -1)
+            await redis_client.delete(redis_key)
+
+            resultado = ", ".join(m.decode() if isinstance(m, bytes) else m for m in mensagens)
+
+            if not future.done():
+                future.set_result(resultado)
+            
+            debounce_tasks.pop(task_key, None)
+            debounce_futures.pop(task_key, None)
+
+            logger.info(f"[✅ Consolidado debounce] {resultado}")
+        except asyncio.CancelledError:
+            logger.info(f"[⛔️ Debounce cancelado] {task_key}")
+
+    
+
+
+
+
+
+
+
+
+
+
+
+# Isso vai sair daqui depois...
 @dataclass
 class EtapaFunil:
     id: str

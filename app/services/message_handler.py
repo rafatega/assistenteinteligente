@@ -2,7 +2,7 @@ import time
 import openai
 from app.config.redis_client import redis_client
 from app.config.config import API_KEY_OPENAI, ZAPI_PHONE_HEADER
-from app.models.receive_message import WebhookMessage
+from app.models.receive_message import WebhookMessage, WebhookProcessor
 from app.models.history_service import HistoricoConversas
 from app.models.search_chunks import BuscadorChunks
 from app.models.openai_service import ChatInput, ChatResponder
@@ -29,19 +29,21 @@ async def process_message(body: dict) -> dict:
     await config_info.get()
 
     # Tratamento da mensagem.
-    webhook_info =  await webhook_treatment(webhook, config_info.tempo_espera_debounce)
+    #webhook_info =  await webhook_treatment(webhook, config_info.tempo_espera_debounce)
+    webhook_process = WebhookProcessor(webhook, config_info.tempo_espera_debounce)
+    webhook_process.processar()
 
     # Só processa se a mensagem não for do próprio bot/assistente
     if not webhook.fromMe:
         chunks = BuscadorChunks(config_info.pinecone_index_name, config_info.pinecone_namespace)
-        await chunks.buscar(webhook_info.mensagem)
+        await chunks.buscar(webhook_process.mensagem_consolidada)
 
         funnel_info = await fetch_funnel_info(webhook.connectedPhone)
         user_info = await fetch_user_info(webhook.connectedPhone, webhook.phone, funnel_info)
-        updated_user_info, updated_prompt = await calculate_user_info(webhook_info.mensagem, user_info, funnel_info, webhook.connectedPhone, webhook.phone)
+        updated_user_info, updated_prompt = await calculate_user_info(webhook_process.mensagem_consolidada, user_info, funnel_info, webhook.connectedPhone, webhook.phone)
 
         chat_input = ChatInput(
-        mensagem=webhook_info.mensagem,
+        mensagem=webhook_process.mensagem_consolidada,
         best_chunks=chunks.best_chunks,
         historico=historico.mensagens,
         prompt_base=funnel_info.prompt_base,
@@ -55,15 +57,15 @@ async def process_message(body: dict) -> dict:
         logger.info(f"OBJETO MENSAGEM DISPATCHER:\n numero: {prepara_envio.numero}\n segmentos: {prepara_envio.segmentos}\n url: {prepara_envio.url}\n headers: {prepara_envio.headers}\n retries: {prepara_envio.retries}\n delay_typing: {prepara_envio.delay_typing}\n delay_between: {prepara_envio.delay_between}\n timeout: {prepara_envio.timeout}\n client: {prepara_envio.client}")
         await prepara_envio.enviar_resposta()
 
-        historico.adicionar_interacao("user", webhook_info.mensagem)
+        historico.adicionar_interacao("user", webhook_process.mensagem_consolidada)
         await historico.salvar()
 
     elif webhook.fromMe:
-        historico.adicionar_interacao("system", webhook_info.mensagem)
+        historico.adicionar_interacao("system", webhook_process.mensagem_consolidada)
         await historico.salvar()
         
     else:
-        logger.info(f"[🔕 IGNORADO] Mensagem do próprio bot/assistente: {webhook_info.phone} - {webhook_info.connectedPhone}")
+        logger.info(f"[🔕 IGNORADO] Mensagem do próprio bot/assistente: {webhook.phone} - {webhook.connectedPhone}")
         #funnel_result = await process_user_funnel(conversation['mensagem'], conversation['numero'], conversation['telefone_empresa'], conversation['nome_cliente'])
         #logger.info(f"[🚀 CONFIG_INFO ]\n {config_info} \n[🚀 CONFIG_INFO ]")
         #logger.info(f"[🚀 WEBHOOK_INFO ]\n {webhook_info} \n[🚀 WEBHOOK_INFO ]")
