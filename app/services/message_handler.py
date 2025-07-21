@@ -18,18 +18,24 @@ zapi_phone_header = ZAPI_PHONE_HEADER
 async def process_message(body: dict) -> dict:
     start_time = time.monotonic()
 
+    # Recebe a cria objeto com informações do webhook.
     webhook = WebhookMessage(**body)
+
+    # Objeto com métodos e atributos do histórico de conversas.
     historico = HistoricoConversas(webhook.connectedPhone, webhook.phone)
     await historico.carregar()
 
+    # Objeto com métodos e atributos das configurações dos nossos cliente.
+    config_info = ConfigService(webhook.connectedPhone)
+    await config_info.get()
+
+    # Tratamento da mensagem.
+    webhook_info =  await webhook_treatment(webhook, config_info.tempo_espera_debounce)
+
     # Só processa se a mensagem não for do próprio bot/assistente
     if not webhook.fromMe:
-        config_info = ConfigService(webhook.connectedPhone)
-        await config_info.get()
-
         chunks = BuscadorChunks(config_info.pinecone_index_name, config_info.pinecone_namespace)
 
-        webhook_info =  await webhook_treatment(webhook, config_info.tempo_espera_debounce)
         await chunks.buscar(webhook_info.mensagem)
 
         funnel_info = await fetch_funnel_info(webhook.connectedPhone)
