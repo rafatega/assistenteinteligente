@@ -8,7 +8,7 @@ from app.models.search_chunks import BuscadorChunks
 from app.models.openai_service import ChatInput, ChatResponder
 from app.models.send_message import MensagemDispatcher
 from app.models.config_info import ConfigService
-from app.services.pipeline_functions import fetch_config_info, fetch_funnel_info, webhook_treatment, fetch_user_info, calculate_user_info
+from app.services.pipeline_functions import fetch_funnel_info, fetch_user_info, calculate_user_info
 from app.utils.logger import logger
 
 openai.api_key = API_KEY_OPENAI
