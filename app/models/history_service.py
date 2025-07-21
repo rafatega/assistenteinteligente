@@ -1,16 +1,17 @@
 import json
 import asyncio
 from app.utils.logger import logger
+from app.config.redis_client import redis_client
 
 class HistoricoConversas:
     PREFIX = "history:"
 
-    def __init__(self, redis_client, telefone_cliente: str, telefone_usuario: str):
-        self.redis = redis_client
+    def __init__(self, telefone_cliente: str, telefone_usuario: str, redis_client: str = redis_client, tentativas: int = 3, mensagens: list = [], cache_ttl_seconds: int = 14400):
         self.key = f"{self.PREFIX}{telefone_cliente}:{telefone_usuario}"
-        self.tentativas = 3
-        self.mensagens = []
-        self.cache_ttl_seconds = 14400
+        self.redis = redis_client
+        self.tentativas = tentativas
+        self.mensagens = mensagens
+        self.cache_ttl_seconds = cache_ttl_seconds
 
     async def carregar(self):
         for tentativa in range(self.tentativas):
