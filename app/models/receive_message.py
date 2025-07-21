@@ -43,7 +43,7 @@ class WebhookProcessor:
 
         if not mensagem:
             logger.info(f"[🔕 IGNORADO] Mensagem vazia | {self.webhook.phone}")
-            mensagem = ""
+            mensagem = None
 
         if self.debounce_timeout > 0:
             mensagem = await self.debounce_and_collect(mensagem)
@@ -72,7 +72,8 @@ class WebhookProcessor:
         redis_key = f"debounce:{self.webhook.phone}:{self.webhook.connectedPhone}"
         task_key = f"{self.webhook.phone}:{self.webhook.connectedPhone}"
 
-        await redis_client.rpush(redis_key, mensagem)
+        if mensagem:
+            await redis_client.rpush(redis_key, mensagem)
 
         # Cancela tarefas anteriores
         if task_key in debounce_tasks:
