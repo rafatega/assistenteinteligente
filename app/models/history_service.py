@@ -33,7 +33,7 @@ class HistoricoConversas:
             "content": content
         })
 
-    async def salvar(self, max_mensagens: int = 6):
+    async def salvar(self, max_mensagens: int = 8):
         mensagens_finais = self.mensagens[-max_mensagens:]
         for tentativa in range(self.tentativas):
             try:

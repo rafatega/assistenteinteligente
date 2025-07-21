@@ -19,21 +19,20 @@ async def process_message(body: dict) -> dict:
 
     webhook = WebhookMessage(**body)
     historico = HistoricoConversas(redis_client, webhook.connectedPhone, webhook.phone)
+    await historico.carregar()
 
-    config_info = await fetch_config_info(webhook.connectedPhone)
+    #config_info = await fetch_config_info(webhook.connectedPhone)
 
     #pinecone_index = pinecone_client.Index(config_info.pinecone_index_name)
 
     #chunks = BuscadorChunks(pinecone_index, config_info.pinecone_namespace)
 
-    webhook_info =  await webhook_treatment(webhook, config_info.tempo_espera_debounce)
+    #webhook_info =  await webhook_treatment(webhook, config_info.tempo_espera_debounce)
     #await chunks.buscar(webhook_info.mensagem)
 
-    funnel_info = await fetch_funnel_info(webhook.connectedPhone)
-    user_info = await fetch_user_info(webhook.connectedPhone, webhook.phone, funnel_info)
-    updated_user_info, updated_prompt = await calculate_user_info(webhook_info.mensagem, user_info, funnel_info, webhook.connectedPhone, webhook.phone)
-
-    await historico.carregar()
+    #funnel_info = await fetch_funnel_info(webhook.connectedPhone)
+    #user_info = await fetch_user_info(webhook.connectedPhone, webhook.phone, funnel_info)
+    #updated_user_info, updated_prompt = await calculate_user_info(webhook_info.mensagem, user_info, funnel_info, webhook.connectedPhone, webhook.phone)
 
     #chat_input = ChatInput(
     #    mensagem=webhook_info.mensagem,
@@ -57,10 +56,20 @@ async def process_message(body: dict) -> dict:
     #history_save = await save_history_info(webhook.connectedPhone, webhook.phone, webhook_info.mensagem, webhook_info.fromMe, history_info)
 
     # Só processa se a mensagem não for do próprio bot/assistente
-    if not webhook_info.fromMe:
+    if not webhook.fromMe:
+        config_info = await fetch_config_info(webhook.connectedPhone)
+
         pinecone_index = pinecone_client.Index(config_info.pinecone_index_name)
         chunks = BuscadorChunks(pinecone_index, config_info.pinecone_namespace)
+
+        historico.adicionar_interacao("user", webhook_info.mensagem)
+
+        webhook_info =  await webhook_treatment(webhook, config_info.tempo_espera_debounce)
         await chunks.buscar(webhook_info.mensagem)
+
+        funnel_info = await fetch_funnel_info(webhook.connectedPhone)
+        user_info = await fetch_user_info(webhook.connectedPhone, webhook.phone, funnel_info)
+        updated_user_info, updated_prompt = await calculate_user_info(webhook_info.mensagem, user_info, funnel_info, webhook.connectedPhone, webhook.phone)
 
         chat_input = ChatInput(
         mensagem=webhook_info.mensagem,
@@ -77,10 +86,10 @@ async def process_message(body: dict) -> dict:
         logger.info(f"OBJETO MENSAGEM DISPATCHER:\n numero: {prepara_envio.numero}\n segmentos: {prepara_envio.segmentos}\n url: {prepara_envio.url}\n headers: {prepara_envio.headers}\n retries: {prepara_envio.retries}\n delay_typing: {prepara_envio.delay_typing}\n delay_between: {prepara_envio.delay_between}\n timeout: {prepara_envio.timeout}\n client: {prepara_envio.client}")
         await prepara_envio.enviar_resposta()
 
-        historico.adicionar_interacao("user", webhook_info.mensagem)
+        #historico.adicionar_interacao("user", webhook_info.mensagem)
         await historico.salvar()
 
-    elif webhook_info.fromMe:
+    elif webhook.fromMe:
         historico.adicionar_interacao("system", webhook_info.mensagem)
         await historico.salvar()
 
