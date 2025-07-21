@@ -121,44 +121,6 @@ class WebhookProcessor:
 
 
 
-
-# Isso vai sair daqui depois...
-@dataclass
-class EtapaFunil:
-    id: str
-    prompt: str
-    obrigatorio: bool
-    permite_nova_entrada: bool = False
-    fallback_llm: Optional[Any] = None
-    aliases: Optional[Dict[str, Any]] = None
-    regex: Optional[List[str]] = None
-
-@dataclass
-class FunnelInfo:
-    prompt_base: str
-    funil: List[EtapaFunil]
-    prompt_apresentacao_inicial: str
-
-    @staticmethod
-    def from_dict(data: Dict[str, Any]) -> "FunnelInfo":
-        funil_raw = data.get("funil", [])
-        funil = [EtapaFunil(**item) for item in funil_raw]
-        return FunnelInfo(
-            prompt_base=data.get("prompt_base", ""),
-            funil=funil,
-            prompt_apresentacao_inicial=data.get("prompt_apresentacao_inicial", "")
-        )
-    
-    def to_tracking_dict(self, preenchidos: Dict[str, Any] = None, estado_atual: Optional[str] = None) -> Dict[str, Any]:
-        preenchidos = preenchidos or {}
-        return {
-            "state": estado_atual or "",
-            "data": {
-                etapa.id: preenchidos.get(etapa.id, None)
-                for etapa in self.funil
-            }
-        }
-
 @dataclass
 class UserInfo:
     state: str

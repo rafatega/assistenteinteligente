@@ -8,6 +8,7 @@ from app.models.search_chunks import BuscadorChunks
 from app.models.openai_service import ChatInput, ChatResponder
 from app.models.send_message import MensagemDispatcher
 from app.models.config_info import ConfigService
+from app.models.funnel_service import FunnelService
 from app.services.pipeline_functions import fetch_funnel_info, fetch_user_info, calculate_user_info
 from app.utils.logger import logger
 
@@ -28,8 +29,7 @@ async def process_message(body: dict) -> dict:
     config_info = ConfigService(webhook.connectedPhone)
     await config_info.get()
 
-    # Tratamento da mensagem.
-    #webhook_info =  await webhook_treatment(webhook, config_info.tempo_espera_debounce)
+    # Tratamento da mensagem (Audio e Debouncer)
     webhook_process = WebhookProcessor(webhook, config_info.tempo_espera_debounce)
     await webhook_process.processar()
 
@@ -38,9 +38,12 @@ async def process_message(body: dict) -> dict:
         chunks = BuscadorChunks(config_info.pinecone_index_name, config_info.pinecone_namespace)
         await chunks.buscar(webhook_process.mensagem_consolidada)
 
-        funnel_info = await fetch_funnel_info(webhook.connectedPhone)
-        user_info = await fetch_user_info(webhook.connectedPhone, webhook.phone, funnel_info)
-        updated_user_info, updated_prompt = await calculate_user_info(webhook_process.mensagem_consolidada, user_info, funnel_info, webhook.connectedPhone, webhook.phone)
+        #funnel_info = await fetch_funnel_info(webhook.connectedPhone)
+        funnel_info = FunnelService(webhook.connectedPhone)
+        await funnel_info.get()
+
+        user_info = await fetch_user_info(webhook.connectedPhone, webhook.phone, funnel_info.funnel_info)
+        updated_user_info, updated_prompt = await calculate_user_info(webhook_process.mensagem_consolidada, user_info, funnel_info.funnel_info, webhook.connectedPhone, webhook.phone)
 
         chat_input = ChatInput(
         mensagem=webhook_process.mensagem_consolidada,
