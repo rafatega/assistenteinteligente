@@ -31,7 +31,7 @@ async def process_message(body: dict) -> dict:
     # Tratamento da mensagem.
     #webhook_info =  await webhook_treatment(webhook, config_info.tempo_espera_debounce)
     webhook_process = WebhookProcessor(webhook, config_info.tempo_espera_debounce)
-    webhook_process.processar()
+    await webhook_process.processar()
 
     # Só processa se a mensagem não for do próprio bot/assistente
     if not webhook.fromMe:
