@@ -1,56 +1,11 @@
 import json
 import re
-from typing import Tuple, Any, Dict, List
+from typing import Tuple
 import copy
 from app.config.redis_client import redis_client
 from app.config.supabase_client import supabase
-from app.models.receive_message import WebhookMessage, ConfigInfo, FunnelInfo, UserInfo
-from app.services.openai_service import extract_message_content
+from app.models.receive_message import FunnelInfo, UserInfo
 from app.utils.logger import logger
-from app.utils.message_aggregator import debounce_and_collect
-#from app.models.history_service import RawHistoryService
-
-async def fetch_config_info(telefone_cliente: str) -> ConfigInfo:
-    SUPABASE_ACCOUNT_DATA = "account_data"
-    CONFIG_INFO = "config_info"
-    CACHE_TTL_SECONDS = None  # Sem TTL para dados estáticos de configuração
-    
-    cache_key = f"{CONFIG_INFO}:{telefone_cliente}"
-
-    # 1. Tenta buscar no Redis
-    cached_data = await redis_client.get(cache_key)
-    if cached_data:
-        try:
-            return ConfigInfo.from_dict(json.loads(cached_data))
-        except json.JSONDecodeError:
-            logger.warning(f"[fetch_config_info] JSON inválido no cache Redis: {cache_key}")
-            await redis_client.delete(cache_key)
-
-    # 2. Busca no Supabase
-    try:
-        res = supabase.table(SUPABASE_ACCOUNT_DATA)\
-            .select(CONFIG_INFO)\
-            .eq("telefone_cliente", telefone_cliente)\
-            .order("id", desc=True)\
-            .limit(1)\
-            .single()\
-            .execute()
-
-        if res.data:
-            config_info = res.data.get(CONFIG_INFO)
-            if not config_info:
-                logger.error(f"[fetch_config_info] Campo '{CONFIG_INFO}' ausente no Supabase para telefone: {telefone_cliente}")
-                raise RuntimeError(f"Erro crítico: Campo '{CONFIG_INFO}' ausente para telefone_cliente {telefone_cliente}")
-
-            await redis_client.set(cache_key, json.dumps(config_info), ex=CACHE_TTL_SECONDS)
-            return ConfigInfo.from_dict(config_info)
-
-        logger.error(f"[fetch_config_info] Nenhum dado encontrado no Supabase para telefone_cliente: {telefone_cliente}")
-    except Exception as e:
-        logger.exception(f"[fetch_config_info] Erro ao consultar Supabase: {e}")
-
-    raise RuntimeError(f"Erro crítico: Falha ao carregar config_info para telefone_cliente {telefone_cliente}")
-
 
 async def fetch_funnel_info(telefone_cliente: str) -> FunnelInfo:
     SUPABASE_ACCOUNT_DATA = "account_data"
@@ -92,25 +47,6 @@ async def fetch_funnel_info(telefone_cliente: str) -> FunnelInfo:
         logger.exception(f"[fetch_funnel_info] Erro ao consultar Supabase: {e}")
 
     raise RuntimeError(f"Erro crítico: Falha ao carregar funnel_info para telefone_cliente {telefone_cliente}")
-
-async def webhook_treatment(webhook: WebhookMessage, tempo_espera_debounce: int) -> WebhookMessage:
-    mensagem = await extract_message_content(webhook)
-
-    # Salva a mensagem bruta no histórico, sem o debounce.
-    #await RawHistoryService().record(cliente=webhook.connectedPhone,usuario=webhook.phone,role="user" if not webhook.fromMe else "assistant",content=mensagem)
-
-    if not mensagem:
-        logger.info(f"[🔕 IGNORADO] Mensagem vazia | {webhook.phone}")
-        webhook.mensagem = ""
-        return webhook
-
-    if tempo_espera_debounce > 0:
-        mensagem = await debounce_and_collect(
-            webhook.phone, webhook.connectedPhone, mensagem, tempo_espera_debounce
-        )
-    webhook.agrupar_mensagem(mensagem)
-    return webhook
-
 
 async def fetch_user_info(telefone_cliente: str, telefone_usuario: str, funnel_info: FunnelInfo) -> UserInfo:
     """Busca o user_info do Redis ou Supabase, com fallback automático"""
@@ -276,79 +212,3 @@ async def calculate_user_info(mensagem: str, user_info: UserInfo, funnel_info: F
 
     etapa_final = next((e for e in funnel_info.funil if e.id == "esperando_humano"), None)
     return user_info, etapa_final.prompt if etapa_final else "Muito obrigado! Em breve a Jaqueline irá te atender por aqui."
-
-
-"""async def fetch_history_info(telefone_cliente: str, telefone_usuario: str) -> List[Dict[str, Any]]:
-    """"""
-    Busca o histórico de conversas no Redis para o par (telefone_cliente, telefone_usuario).
-    Em caso de falha de acesso ou valor ausente/corrompido, retorna apenas o prompt sistêmico inicial.
-    """"""
-    HISTORY_KEY_TEMPLATE = "history:{telefone_cliente}:{telefone_usuario}"
-    DEFAULT_HISTORY: Dict[str, str] = {
-    "role": "system",
-    "content": "O cliente não tem histórico de interações com a empresa."
-    }
-
-    key = HISTORY_KEY_TEMPLATE.format(
-        telefone_cliente=telefone_cliente,
-        telefone_usuario=telefone_usuario,
-    )
-
-    try:
-        raw = await redis_client.get(key)
-        if raw:
-            history = json.loads(raw)
-            if isinstance(history, list):
-                return history
-            # Dado inesperado no cache: log e limpeza
-            logger.warning(
-                "[fetch_history_info] Valor inválido no Redis para '%s': tipo %s",
-                key, type(history).__name__
-            )
-            await redis_client.delete(key)
-    except Exception as err:
-        logger.error(
-            "[fetch_history_info] Falha ao acessar Redis para chave '%s': %s",
-            key, err
-        )
-
-    # Se não encontrou nada ou houve erro/corrupção, retorna o prompt inicial
-    return [DEFAULT_HISTORY.copy()]
-
-async def save_history_info(telefone_cliente: str, telefone_usuario: str, mensagem: str, from_me: bool, history) -> None:
-    # Constantes de cache
-    HISTORY_KEY_TEMPLATE = "history:{telefone_cliente}:{telefone_usuario}"
-    HISTORY_TTL_SECONDS = 14400  # 4 horas
-    MAX_HISTORY_ENTRIES = 6
-    """"""
-    Carrega o histórico, adiciona a mensagem como 'user' ou 'assistant',
-    trunca para as últimas N entradas e salva de volta no Redis com TTL.
-    """"""
-    key = HISTORY_KEY_TEMPLATE.format(
-        telefone_cliente=telefone_cliente,
-        telefone_usuario=telefone_usuario,
-    )
-
-    # 1. Busca histórico atual (pode retornar lista vazia)
-    history = await fetch_history_info(redis_client, telefone_cliente, telefone_usuario)
-
-    # 2. Determina o role e adiciona a nova entrada
-    role = "assistant" if from_me else "user"
-    history.append({"role": role, "content": mensagem})
-
-    # 3. Trunca para as últimas entradas
-    truncated = history[-MAX_HISTORY_ENTRIES :]
-
-    # 4. Persiste no Redis com TTL
-    try:
-        await redis_client.set(
-            key,
-            json.dumps(truncated),
-            ex=HISTORY_TTL_SECONDS
-        )
-    except Exception as err:
-        logger.error(
-            "[save_history_info] Não foi possível salvar histórico para '%s': %s",
-            key, err
-        )
-        # Se for um erro crítico, você pode re-raise ou alertar aqui."""
