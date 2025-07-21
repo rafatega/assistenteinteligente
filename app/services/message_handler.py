@@ -1,7 +1,7 @@
 import time
-import openai, pinecone
+import openai
 from app.config.redis_client import redis_client
-from app.config.config import API_KEY_OPENAI, API_KEY_PINECONE, ZAPI_PHONE_HEADER
+from app.config.config import API_KEY_OPENAI, ZAPI_PHONE_HEADER
 from app.models.receive_message import WebhookMessage
 from app.models.history_service import HistoricoConversas
 from app.models.search_chunks import BuscadorChunks
@@ -12,7 +12,6 @@ from app.services.pipeline_functions import fetch_config_info, fetch_funnel_info
 from app.utils.logger import logger
 
 openai.api_key = API_KEY_OPENAI
-pinecone_client = pinecone.Pinecone(api_key=API_KEY_PINECONE)
 zapi_phone_header = ZAPI_PHONE_HEADER
 
 async def process_message(body: dict) -> dict:
@@ -35,7 +34,6 @@ async def process_message(body: dict) -> dict:
     # Só processa se a mensagem não for do próprio bot/assistente
     if not webhook.fromMe:
         chunks = BuscadorChunks(config_info.pinecone_index_name, config_info.pinecone_namespace)
-
         await chunks.buscar(webhook_info.mensagem)
 
         funnel_info = await fetch_funnel_info(webhook.connectedPhone)
@@ -79,6 +77,6 @@ async def process_message(body: dict) -> dict:
         #logger.info(f"[🚀🚀✅ ENVIADO ✅🚀🚀]")
     
     elapsed = time.monotonic() - start_time
-    logger.info(f"[⏱️ Tempo de execução total]: {elapsed:.3f} segundos")
+    logger.info(f"[⏱️ Tempo de execução total, BOT*{webhook.fromMe}*]: {elapsed:.3f} segundos")
 
 
