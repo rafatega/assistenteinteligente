@@ -24,10 +24,10 @@ async def process_message(body: dict) -> dict:
 
     # Só processa se a mensagem não for do próprio bot/assistente
     if not webhook.fromMe:
-        config_info = await ConfigService(webhook.connectedPhone)
+        config_info = ConfigService(webhook.connectedPhone)
+        await config_info.get()
 
-        pinecone_index = pinecone_client.Index(config_info.pinecone_index_name)
-        chunks = BuscadorChunks(pinecone_index, config_info.pinecone_namespace)
+        chunks = BuscadorChunks(config_info.pinecone_index_name, config_info.pinecone_namespace)
 
         webhook_info =  await webhook_treatment(webhook, config_info.tempo_espera_debounce)
         await chunks.buscar(webhook_info.mensagem)
