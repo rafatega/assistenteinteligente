@@ -9,7 +9,7 @@ from app.models.openai_service import ChatInput, ChatResponder
 from app.models.send_message import MensagemDispatcher
 from app.models.config_info import ConfigService
 from app.models.funnel_service import FunnelService
-from app.services.pipeline_functions import fetch_funnel_info, fetch_user_info, calculate_user_info
+from app.services.pipeline_functions import fetch_user_info, calculate_user_info
 from app.utils.logger import logger
 
 openai.api_key = API_KEY_OPENAI

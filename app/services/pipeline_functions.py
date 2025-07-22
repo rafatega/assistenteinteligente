@@ -4,51 +4,10 @@ from typing import Tuple
 import copy
 from app.config.redis_client import redis_client
 from app.config.supabase_client import supabase
-from app.models.receive_message import FunnelInfo, UserInfo
+from app.models.receive_message import UserInfo
 from app.utils.logger import logger
 
-async def fetch_funnel_info(telefone_cliente: str) -> FunnelInfo:
-    SUPABASE_ACCOUNT_DATA = "account_data"
-    FUNNEL_INFO = "funnel_info"
-    CACHE_TTL_SECONDS = None
-    
-    cache_key = f"{FUNNEL_INFO}:{telefone_cliente}"
-
-    # 1. Tenta buscar no Redis
-    cached_data = await redis_client.get(cache_key)
-    if cached_data:
-        try:
-            return FunnelInfo.from_dict(json.loads(cached_data))
-        except json.JSONDecodeError:
-            logger.warning(f"[fetch_funnel_info] JSON inválido no cache Redis: {cache_key}")
-            await redis_client.delete(cache_key)
-
-    # 2. Busca no Supabase
-    try:
-        res = supabase.table(SUPABASE_ACCOUNT_DATA)\
-            .select(FUNNEL_INFO)\
-            .eq("telefone_cliente", telefone_cliente)\
-            .order("id", desc=True)\
-            .limit(1)\
-            .single()\
-            .execute()
-
-        if res.data:
-            funnel_info = res.data.get(FUNNEL_INFO)
-            if not funnel_info:
-                logger.error(f"[fetch_funnel_info] Campo '{FUNNEL_INFO}' ausente no Supabase para telefone: {telefone_cliente}")
-                raise RuntimeError(f"Erro crítico: Campo '{FUNNEL_INFO}' ausente para telefone_cliente {telefone_cliente}")
-
-            await redis_client.set(cache_key, json.dumps(funnel_info), ex=CACHE_TTL_SECONDS)
-            return FunnelInfo.from_dict(funnel_info)
-
-        logger.error(f"[fetch_funnel_info] Nenhum dado encontrado no Supabase para telefone_cliente: {telefone_cliente}")
-    except Exception as e:
-        logger.exception(f"[fetch_funnel_info] Erro ao consultar Supabase: {e}")
-
-    raise RuntimeError(f"Erro crítico: Falha ao carregar funnel_info para telefone_cliente {telefone_cliente}")
-
-async def fetch_user_info(telefone_cliente: str, telefone_usuario: str, funnel_info: FunnelInfo) -> UserInfo:
+async def fetch_user_info(telefone_cliente: str, telefone_usuario: str, funnel_info) -> UserInfo:
     """Busca o user_info do Redis ou Supabase, com fallback automático"""
     SUPABASE_USER_INFO_TABLE = "user_data"
     USER_INFO = "user_info"
@@ -91,7 +50,7 @@ async def fetch_user_info(telefone_cliente: str, telefone_usuario: str, funnel_i
     logger.info(f"[fetch_user_info] Criando novo user_info para {telefone_usuario}")
     return await create_initial_user_info(telefone_cliente, telefone_usuario, funnel_info)
 
-async def create_initial_user_info(telefone_cliente: str, telefone_usuario: str, funnel_info: FunnelInfo) -> UserInfo:
+async def create_initial_user_info(telefone_cliente: str, telefone_usuario: str, funnel_info) -> UserInfo:
     SUPABASE_USER_INFO_TABLE = "user_data"
     USER_INFO = "user_info"
     CACHE_TTL_SECONDS = 14400
@@ -122,7 +81,7 @@ async def create_initial_user_info(telefone_cliente: str, telefone_usuario: str,
         logger.exception(f"[create_initial_user_info] Erro ao criar/atualizar user_info: {e}")
         raise RuntimeError("Erro ao criar ou atualizar o estado inicial do usuário")
 
-def sync_user_info_with_funnel(user_info: UserInfo, funnel_info: FunnelInfo) -> UserInfo:
+def sync_user_info_with_funnel(user_info: UserInfo, funnel_info) -> UserInfo:
     funnel_ids = [etapa.id for etapa in funnel_info.funil]
 
     updated_data = {
@@ -134,7 +93,7 @@ def sync_user_info_with_funnel(user_info: UserInfo, funnel_info: FunnelInfo) -> 
 
     return UserInfo(state=updated_state, data=updated_data)
 
-async def calculate_user_info(mensagem: str, user_info: UserInfo, funnel_info: FunnelInfo, telefone_cliente: str, telefone_usuario: str) -> Tuple[UserInfo, str]:
+async def calculate_user_info(mensagem: str, user_info: UserInfo, funnel_info, telefone_cliente: str, telefone_usuario: str) -> Tuple[UserInfo, str]:
     """
     Atualiza múltiplos campos do user_info com base em uma única mensagem.
     - Primeiro percorre todo o funil para tentar extrair todos os dados possíveis.
