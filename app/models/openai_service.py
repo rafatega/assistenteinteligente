@@ -12,8 +12,7 @@ class ChatInput:
     historico: Union[str, List[Dict]]
     prompt_base: str
     prompt_state: str
-    user_data: Dict[str, Any]  # Agora user_data como dict
-    funnel_etapas: List[Any]   # Etapas do funil para formatação dinâmica
+    user_data: Any
 
 class ChatResponder:
     def __init__(
@@ -21,10 +20,10 @@ class ChatResponder:
         chat_input: ChatInput,
         modelo="gpt-4o-mini",
         modelo_fallback="gpt-3.5-turbo",
-        tentativas: int=3,
-        temperature: float=0.4,
-        top_p: float=0.9,
-        max_tokens: int=200
+        tentativas: int = 3,
+        temperature: float = 0.4,
+        top_p: float = 0.9,
+        max_tokens: int = 200
     ):
         self.input = chat_input
         self.modelo = modelo
@@ -44,20 +43,27 @@ class ChatResponder:
                 return "(Histórico inválido ou não disponível.)"
         if not historico:
             return "(Sem histórico de conversa até o momento.)"
-        role_map = {"system":"🧠 Sistema","assistant":"🤖 Assistente","user":"🧍 Paciente"}
+
+        role_map = {
+            "system": "🧠 Sistema",
+            "assistant": "🤖 Assistente",
+            "user": "🧍 Paciente"
+        }
+
         return "\n".join(
-            f"{role_map.get(m.get('role'), m.get('role'))}: {m.get('content','').strip()}"
+            f"{role_map.get(m.get('role'), m.get('role'))}: {m.get('content', '').strip()}"
             for m in historico
         )
 
     def formatar_userinfo(self) -> str:
-        data = self.input.user_data.get("data", {})
-        logger.info(f"DATA: {data}")
-        estado = self.input.user_data.get("state", "")
+        estado = getattr(self.input.user_data, "state", "")
+        dados = getattr(self.input.user_data, "data", {})
+        if not isinstance(dados, dict):
+            return "(Informações do paciente indisponíveis.)"
+
         linhas = [f"📌 Etapa atual: {estado or '(nenhuma)'}", "📋 Dados coletados:"]
-        for etapa in self.input.funnel_etapas:
-            valor = data.get(etapa.id)
-            nome_legivel = etapa.id.replace("_", " ").capitalize()
+        for chave, valor in dados.items():
+            nome_legivel = chave.replace("_", " ").capitalize()
             if valor is None:
                 linhas.append(f"- {nome_legivel}: ❌ Ainda não informado")
             else:
@@ -93,6 +99,7 @@ class ChatResponder:
         messages = self.build_messages(system_msg)
         logger.info("=== CONTEXTO ENVIADO AO GPT ===")
         logger.info(system_msg.replace("\n", "\\n"))  # Log mais legível
+
         for i in range(self.tentativas):
             model = self.modelo if i < self.tentativas - 1 else self.modelo_fallback
             try:
@@ -107,6 +114,7 @@ class ChatResponder:
                 return self.resposta
             except Exception as e:
                 logger.error(f"[ChatResponder] erro (tentativa {i+1}, modelo {model}): {e}")
+
         logger.critical("[ChatResponder] falha total ao gerar resposta.")
         self.resposta = "Desculpe, ocorreu um erro ao processar sua pergunta."
         return self.resposta

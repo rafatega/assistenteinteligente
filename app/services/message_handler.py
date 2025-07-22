@@ -58,8 +58,7 @@ async def process_message(body: dict) -> dict:
         historico=historico.mensagens,
         prompt_base=funnel_info.funnel.prompt_base,
         prompt_state=updater.response_prompt,
-        user_data=updater.user_info,
-        funnel_etapas=updater.user_info.data
+        user_data=updater.user_info
     )
         responder = ChatResponder(chat_input)
         await responder.generate()
