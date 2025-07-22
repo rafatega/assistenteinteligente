@@ -3,7 +3,9 @@ import httpx
 import asyncio
 from typing import List
 
+from app.config.config import ZAPI_PHONE_HEADER
 from app.utils.logger import logger
+
 
 class RespostaSegmentada:
     ABBREVIATIONS = [r'Sr', r'Sra', r'Dr', r'Dra', r'Av', r'Ed', r'Prof', r'Profa', r'Profª', r'Ex', r'Exa', r'Adm', r'Assoc', r'etc', r'p\.e', r'p\.ex']
@@ -36,7 +38,7 @@ class RespostaSegmentada:
         return iter(self.resposta_segmentada)
 
 class MensagemDispatcher:
-    def __init__(self, numero_destino: str, resposta: str, zapi_instance_id: str, zapi_token: str, zapi_phone_header: str, retries: int = 3, delay_typing: int = 3, delay_between: float = 0, timeout: int = 10):
+    def __init__(self, numero_destino: str, resposta: str, zapi_instance_id: str, zapi_token: str, zapi_phone_header: str = ZAPI_PHONE_HEADER, retries: int = 3, delay_typing: int = 3, delay_between: float = 0, timeout: int = 10):
         self.numero = numero_destino
         self.segmentos = RespostaSegmentada(resposta)
         self.url = f"https://api.z-api.io/instances/{zapi_instance_id}/token/{zapi_token}/send-text"

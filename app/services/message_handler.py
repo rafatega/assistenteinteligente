@@ -1,7 +1,5 @@
 import time
-import openai
-from app.config.redis_client import redis_client
-from app.config.config import API_KEY_OPENAI, ZAPI_PHONE_HEADER
+
 from app.models.receive_message import WebhookMessage, WebhookProcessor
 from app.models.history_service import HistoricoConversas
 from app.models.search_chunks import BuscadorChunks
@@ -12,9 +10,6 @@ from app.models.funnel_service import FunnelService
 from app.models.user_info import UserInfoService
 from app.services.pipeline_functions import calculate_user_info
 from app.utils.logger import logger
-
-openai.api_key = API_KEY_OPENAI
-zapi_phone_header = ZAPI_PHONE_HEADER
 
 async def process_message(body: dict) -> dict:
     start_time = time.monotonic()
@@ -60,8 +55,7 @@ async def process_message(body: dict) -> dict:
         responder = ChatResponder(chat_input)
         await responder.generate()
 
-        prepara_envio = MensagemDispatcher(webhook.phone, responder.resposta, config_info.zapi_instance_id, config_info.zapi_token, zapi_phone_header)
-        logger.info(f"OBJETO MENSAGEM DISPATCHER:\n numero: {prepara_envio.numero}\n segmentos: {prepara_envio.segmentos}\n url: {prepara_envio.url}\n headers: {prepara_envio.headers}\n retries: {prepara_envio.retries}\n delay_typing: {prepara_envio.delay_typing}\n delay_between: {prepara_envio.delay_between}\n timeout: {prepara_envio.timeout}\n client: {prepara_envio.client}")
+        prepara_envio = MensagemDispatcher(webhook.phone, responder.resposta, config_info.zapi_instance_id, config_info.zapi_token)
         await prepara_envio.enviar_resposta()
 
         historico.adicionar_interacao("user", webhook_process.mensagem_consolidada)
