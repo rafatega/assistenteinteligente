@@ -47,9 +47,9 @@ class FunnelService:
     TABLE = "account_data"
     FIELD = "funnel_info"
 
-    def __init__(self, telefone_cliente: str, ttl: Optional[int] = 43200, redis_client: Any = redis_client, supabase_client: Any = supabase):
+    def __init__(self, telefone_cliente: str, cache_ttl: Optional[int] = 43200, redis_client: Any = redis_client, supabase_client: Any = supabase):
         self.telefone = telefone_cliente
-        self.ttl = ttl
+        self.cache_ttl = cache_ttl
         self.redis_client = redis_client
         self.supabase_client = supabase_client
         self.funnel_info: Optional[FunnelInfo] = None
@@ -81,5 +81,5 @@ class FunnelService:
             raise RuntimeError
         
         self.funnel_info = FunnelInfo.from_dict(funnel)
-        await self.redis_client.set(key, json.dumps(funnel), ex=self.ttl)
+        await self.redis_client.set(key, json.dumps(funnel), ex=self.cache_ttl)
         return self.funnel_info

@@ -2,7 +2,7 @@ from pydantic import BaseModel
 import requests
 import openai
 import asyncio
-from typing import Optional, List, Dict, Any
+from typing import Optional, Dict, Any
 from dataclasses import dataclass, field
 
 from app.config.redis_client import redis_client
@@ -109,32 +109,3 @@ class WebhookProcessor:
             logger.info(f"[✅ Consolidado debounce] {resultado}")
         except asyncio.CancelledError:
             logger.info(f"[⛔️ Debounce cancelado] {task_key}")
-
-    
-
-
-
-
-
-
-
-
-
-
-@dataclass
-class UserInfo:
-    state: str
-    data: Dict[str, Any] = field(default_factory=dict)
-
-    @staticmethod
-    def from_dict(data: Dict[str, Any]) -> "UserInfo":
-        return UserInfo(
-            state=data.get("state", ""),
-            data=data.get("data", {})
-        )
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "state": self.state,
-            "data": self.data
-        }
