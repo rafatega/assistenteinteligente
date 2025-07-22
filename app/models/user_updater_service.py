@@ -49,27 +49,26 @@ class UserInfoUpdater:
     def _extrair_valor(self, etapa: Any) -> Optional[str]:
 
         # REGEX
-        regex_list = etapa.regex or []
-        for pattern in regex_list:
-            if match := re.search(pattern, self.mensagem):
+        for pattern in etapa.regex or []:
+            match = re.search(pattern, self.mensagem)
+            if match:
                 grupos = match.groupdict()
-                return next(iter(grupos.values()), None) # Retorna valor ou None
+                return next(iter(grupos.values()), None)
 
-        # HEURISTICA
-        if etapa.aliases:
-            for chave, regras in etapa.aliases.items():
-                if not isinstance(regras, dict):
-                    continue  # Protege contra None ou tipos incorretos
+        # HEURÍSTICA
+        for chave, regras in (etapa.aliases or {}).items():
+            if not isinstance(regras, dict):
+                continue
 
-                frases = regras.get("frases") or []
-                palavras = regras.get("palavras") or []
+            for frase in regras.get("frases") or []:
+                if frase.lower() in self.mensagem:
+                    return chave
 
-                if any(frase.lower() in self.mensagem for frase in frases):
+            tokens = self.mensagem.split()
+            for palavra in regras.get("palavras") or []:
+                if palavra.lower() in tokens:
                     return chave
                 
-                tokens = self.mensagem.split()
-                if any(p.lower() in tokens for p in palavras):
-                    return chave
         return None
 
     def _definir_prompt_para_etapa(self, etapa: Any, valor_atual: Any) -> None:
