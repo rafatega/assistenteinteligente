@@ -10,7 +10,7 @@ from app.models.send_message import MensagemDispatcher
 from app.models.config_info import ConfigService
 from app.models.funnel_service import FunnelService
 from app.models.user_info import UserInfoService
-from app.services.pipeline_functions import fetch_user_info, calculate_user_info
+from app.services.pipeline_functions import calculate_user_info
 from app.utils.logger import logger
 
 openai.api_key = API_KEY_OPENAI
@@ -46,6 +46,7 @@ async def process_message(body: dict) -> dict:
         #user_info = await fetch_user_info(webhook.connectedPhone, webhook.phone, funnel_info.funnel_info)
         user_info = UserInfoService(webhook.connectedPhone, webhook.phone, funnel_info.funnel_info)
         user_info.get()
+        
         updated_user_info, updated_prompt = await calculate_user_info(webhook_process.mensagem_consolidada, user_info.user_info, funnel_info.funnel_info, webhook.connectedPhone, webhook.phone)
 
         chat_input = ChatInput(
