@@ -49,7 +49,7 @@ async def process_message(body: dict) -> dict:
         mensagem=webhook_process.mensagem_consolidada,
         best_chunks=chunks.best_chunks,
         historico=historico.mensagens,
-        prompt_base=funnel_info.prompt_base,
+        prompt_base=funnel_info.funnel_info.prompt_base,
         prompt_state=updated_prompt,
         user_data=updated_user_info
     )
