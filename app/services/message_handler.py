@@ -45,11 +45,12 @@ async def process_message(body: dict) -> dict:
         #user_info = await fetch_user_info(webhook.connectedPhone, webhook.phone, funnel_info.funnel_info)
         user_info = UserInfoService(webhook.connectedPhone, webhook.phone, funnel_info.funnel)
         await user_info.get()
-        logger.info(f"user_info: {user_info}")
+        
 
         #updated_user_info, updated_prompt = await calculate_user_info(webhook_process.mensagem_consolidada, user_info.user_info, funnel_info.funnel, webhook.connectedPhone, webhook.phone)
         updater = UserInfoUpdater(mensagem=webhook_process.mensagem_consolidada, user_info=user_info.user_info, funnel_info=funnel_info.funnel, telefone_cliente=webhook.connectedPhone, telefone_usuario=webhook.phone)
         await updater.process()
+        logger.info(f"updater.user_info.data: {updater.user_info.data}")
 
         chat_input = ChatInput(
         mensagem=webhook_process.mensagem_consolidada,
