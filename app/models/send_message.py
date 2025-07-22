@@ -61,7 +61,7 @@ class MensagemDispatcher:
         }
         for attempt in range(1, self.retries + 1):
             try:
-                logger.info(f"Enviando segmento {attempt}/{self.retries}: {segmento}")
+                #logger.info(f"Enviando segmento {attempt}/{self.retries}: {segmento}")
                 resp = await self.client.post(self.url, json=payload, headers=self.headers)
                 if resp.status_code == 200:
                     return {"segmento": segmento, "status": resp.status_code}
