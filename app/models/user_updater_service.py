@@ -7,15 +7,6 @@ from app.utils.logger import logger
 from app.models.user_info import UserInfo
 from app.models.funnel_service import FunnelInfo
 
-import json
-import re
-import copy
-from typing import Optional, Tuple, Any
-from app.models.user_info import UserInfo
-from app.models.receive_message import FunnelInfo
-from app.config.redis_client import redis_client
-from app.utils.logger import logger
-
 class UserInfoUpdater:
     def __init__(self, mensagem: str, user_info: UserInfo, funnel_info: FunnelInfo, telefone_cliente: str, telefone_usuario: str, cache_ttl: Optional[int] = 14400):
         self.mensagem = mensagem.lower()

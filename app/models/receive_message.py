@@ -2,9 +2,7 @@ from pydantic import BaseModel
 import requests
 import openai
 import asyncio
-from typing import Optional, Dict, Any
-from dataclasses import dataclass, field
-
+from typing import Optional
 from app.config.redis_client import redis_client
 from app.utils.logger import logger
 
