@@ -1,5 +1,7 @@
 import time
+import openai
 
+from app.config.config import API_KEY_OPENAI
 from app.models.receive_message import WebhookMessage, WebhookProcessor
 from app.models.history_service import HistoricoConversas
 from app.models.search_chunks import BuscadorChunks
@@ -10,6 +12,8 @@ from app.models.funnel_service import FunnelService
 from app.models.user_info import UserInfoService
 from app.services.pipeline_functions import calculate_user_info
 from app.utils.logger import logger
+
+openai.api_key = API_KEY_OPENAI
 
 async def process_message(body: dict) -> dict:
     start_time = time.monotonic()
