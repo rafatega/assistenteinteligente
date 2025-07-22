@@ -17,11 +17,22 @@ class BuscadorChunks:
         self.best_chunks: List[str] = []
 
     def formatar_chunks(self, matches: List[dict]) -> List[str]:
-        return [
-            " | ".join(f"{k}: {v}" for k, v in match.get("metadata", {}).items() if k != "id")
-            for match in matches if match.get("metadata")
-        ]
-
+        formatted = []
+        for match in matches:
+            md = match.get("metadata", {})
+            # identificar um campo que represente o tipo ou título
+            title = md.get("secao", "Info clínica").capitalize()
+            lines = [f"**{title}**"]
+            for k, v in md.items():
+                if k == "secao":
+                    continue
+                # trata listas
+                if isinstance(v, list):
+                    v = ", ".join(v)
+                lines.append(f"- {k.replace('_', ' ').capitalize()}: {v}")
+            formatted.append("\n".join(lines))
+        return formatted
+    
     async def buscar(self, query: str) -> List[str]:
         for tentativa in range(self.tentativas):
             try:
