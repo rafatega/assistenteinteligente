@@ -1,4 +1,5 @@
 import openai
+import textwrap
 from typing import List, Dict
 from app.utils.logger import logger
 from dataclasses import dataclass
@@ -27,10 +28,10 @@ class ChatResponder:
 
         return f"""
 [INSTRUÇÕES DA DIANA]:
-{self.input.prompt_base or "Sem instruções da Diana até o momento."}
+{textwrap.dedent(self.input.prompt_base or "Sem instruções da Diana até o momento.").strip()}
 
 [ESTADO DO FUNIL]:
-{self.input.prompt_state or "Sem estado de funil até o momento."}
+{textwrap.dedent(self.input.prompt_state or "Sem instruções da Diana até o momento.").strip()}
 
 [HISTÓRICO DE CONVERSA]:
 {self.input.historico or "Sem histórico de conversa até o momento."}
