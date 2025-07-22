@@ -47,6 +47,7 @@ class UserInfoUpdater:
             self._definir_prompt_para_etapa(etapa, valor_atual)
 
     def _extrair_valor(self, etapa: Any) -> Optional[str]:
+        logger.info(f"ETAPA: {etapa}")
         if etapa.regex:
             for pattern in etapa.regex:
                 if match := re.search(pattern, self.mensagem):
