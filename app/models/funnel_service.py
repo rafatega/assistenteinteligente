@@ -52,16 +52,16 @@ class FunnelService:
         self.cache_ttl = cache_ttl
         self.redis_client = redis_client
         self.supabase_client = supabase_client
-        self.funnel_info: Optional[FunnelInfo] = None
+        self.funnel: Optional[FunnelInfo] = None
 
     async def get(self) -> FunnelInfo:
         key = f"{self.FIELD}:{self.telefone}"
         raw = await self.redis_client.get(key)
         if raw:
             try:
-                self.funnel_info = FunnelInfo.from_dict(json.loads(raw))
+                self.funnel = FunnelInfo.from_dict(json.loads(raw))
                 # Eu tirei os returns dos outros, mas é interessante deixar...
-                return self.funnel_info
+                return self.funnel
             except json.JSONDecodeError:
                 await self.redis_client.delete(key)
                 logger.warning(f"JSON inválido em cache: {key}")
@@ -80,6 +80,6 @@ class FunnelService:
             logger.error(f"Nenhum funnel encontrado para {self.telefone}")
             raise RuntimeError
         
-        self.funnel_info = FunnelInfo.from_dict(funnel)
+        self.funnel = FunnelInfo.from_dict(funnel)
         await self.redis_client.set(key, json.dumps(funnel), ex=self.cache_ttl)
-        return self.funnel_info
+        return self.funnel

@@ -10,7 +10,7 @@ from app.models.send_message import MensagemDispatcher
 from app.models.config_info import ConfigService
 from app.models.funnel_service import FunnelService
 from app.models.user_info import UserInfoService
-from app.services.pipeline_functions import calculate_user_info
+from app.models.user_updater_service import UserInfoUpdater
 from app.utils.logger import logger
 
 openai.api_key = API_KEY_OPENAI
@@ -43,18 +43,20 @@ async def process_message(body: dict) -> dict:
         await funnel_info.get()
 
         #user_info = await fetch_user_info(webhook.connectedPhone, webhook.phone, funnel_info.funnel_info)
-        user_info = UserInfoService(webhook.connectedPhone, webhook.phone, funnel_info.funnel_info)
+        user_info = UserInfoService(webhook.connectedPhone, webhook.phone, funnel_info.funnel)
         await user_info.get()
 
-        updated_user_info, updated_prompt = await calculate_user_info(webhook_process.mensagem_consolidada, user_info.user_info, funnel_info.funnel_info, webhook.connectedPhone, webhook.phone)
+        #updated_user_info, updated_prompt = await calculate_user_info(webhook_process.mensagem_consolidada, user_info.user_info, funnel_info.funnel, webhook.connectedPhone, webhook.phone)
+        updater = UserInfoUpdater(mensagem=webhook_process.mensagem_consolidada, user_info=user_info.user_info, funnel_info=funnel_info.funnel, telefone_cliente=webhook.connectedPhone, telefone_usuario=webhook.phone)
+        await updater.process()
 
         chat_input = ChatInput(
         mensagem=webhook_process.mensagem_consolidada,
         best_chunks=chunks.best_chunks,
         historico=historico.mensagens,
-        prompt_base=funnel_info.funnel_info.prompt_base,
-        prompt_state=updated_prompt,
-        user_data=updated_user_info
+        prompt_base=funnel_info.funnel.prompt_base,
+        prompt_state=updater.response_prompt,
+        user_data=updater.user_info
     )
         responder = ChatResponder(chat_input)
         await responder.generate()
