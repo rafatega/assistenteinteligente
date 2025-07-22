@@ -1,6 +1,7 @@
 import openai
+import json
 import textwrap
-from typing import List, Dict
+from typing import List, Dict, Union
 from app.utils.logger import logger
 from dataclasses import dataclass
 
@@ -8,7 +9,7 @@ from dataclasses import dataclass
 class ChatInput:
     mensagem: str
     best_chunks: List[str]
-    historico: str
+    historico: Union[str, List[Dict]]
     prompt_base: str
     prompt_state: str
     user_data: str
@@ -17,29 +18,50 @@ class ChatResponder:
     def __init__(self, chat_input: ChatInput, modelo="gpt-4o-mini", modelo_fallback="gpt-3.5-turbo", tentativas=3, temperature=0.4, top_p=0.9, max_tokens=200):
         self.input = chat_input
         self.modelo = modelo
-        self.modelo_fallback= modelo_fallback
+        self.modelo_fallback = modelo_fallback
         self.tentativas = tentativas
         self.temperature = temperature
         self.top_p = top_p
         self.max_tokens = max_tokens
         self.resposta = ""
-    
-    def build_system_content(self) -> str:
 
+    def formatar_historico(self) -> str:
+        historico_raw = self.input.historico
+        if isinstance(historico_raw, str):
+            try:
+                historico_raw = json.loads(historico_raw)
+            except json.JSONDecodeError:
+                return "(Histórico inválido ou não disponível.)"
+
+        if not historico_raw:
+            return "(Sem histórico de conversa até o momento.)"
+
+        role_map = {
+            "system": "🧠 Sistema",
+            "assistant": "🤖 Assistente",
+            "user": "🧍 Paciente"
+        }
+
+        return "\n".join(
+            f"{role_map.get(m.get('role'), m.get('role'))}: {m.get('content', '').strip()}"
+            for m in historico_raw
+        )
+
+    def build_system_content(self) -> str:
         return f"""
-[INSTRUÇÕES DA DIANA]:
+[INSTRUÇÕES DA DIANA]
 {textwrap.dedent(self.input.prompt_base or "Sem instruções da Diana até o momento.").strip()}
 
-[ESTADO DO FUNIL]:
-{textwrap.dedent(self.input.prompt_state or "Sem instruções da Diana até o momento.").strip()}
+[ESTADO DO FUNIL]
+{textwrap.dedent(self.input.prompt_state or "Sem estado de funil até o momento.").strip()}
 
-[HISTÓRICO DE CONVERSA]:
-{self.input.historico or "Sem histórico de conversa até o momento."}
+[HISTÓRICO DE CONVERSA]
+{self.formatar_historico()}
 
-[INFORMAÇÕES DO PACIENTE]:
+[INFORMAÇÕES DO PACIENTE]
 {self.input.user_data or "Sem informações adicionais do paciente."}
 
-[CONTEXTO DA CLÍNICA]:
+[CONTEXTO DA CLÍNICA]
 {"\n".join(self.input.best_chunks) or "Sem informações adicionais da clínica."}
 """
 
@@ -50,7 +72,6 @@ class ChatResponder:
         ]
 
     async def generate(self) -> str:
-        
         contexto_cru = self.build_system_content().strip()
         contexto_completo = self.build_messages(contexto_cru)
         logger.info(f"Contexto: {contexto_completo}")

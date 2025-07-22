@@ -68,7 +68,7 @@ async def process_message(body: dict) -> dict:
         await historico.salvar()
 
     elif webhook.fromMe:
-        historico.adicionar_interacao("system", webhook_process.mensagem_consolidada)
+        historico.adicionar_interacao("assistant", webhook_process.mensagem_consolidada)
         await historico.salvar()
         
     else:
