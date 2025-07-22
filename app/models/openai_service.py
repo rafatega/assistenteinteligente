@@ -52,6 +52,7 @@ class ChatResponder:
 
     def formatar_userinfo(self) -> str:
         data = self.input.user_data.get("data", {})
+        logger.info(f"DATA: {data}")
         estado = self.input.user_data.get("state", "")
         linhas = [f"📌 Etapa atual: {estado or '(nenhuma)'}", "📋 Dados coletados:"]
         for etapa in self.input.funnel_etapas:
