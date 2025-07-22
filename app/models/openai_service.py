@@ -1,5 +1,4 @@
 import openai
-import json
 from typing import List, Dict
 from app.utils.logger import logger
 from dataclasses import dataclass
@@ -53,7 +52,7 @@ class ChatResponder:
         
         contexto_cru = self.build_system_content().strip()
         contexto_completo = self.build_messages(contexto_cru)
-        logger.info("✅ Contexto enviado ao GPT:\n" + json.dumps({contexto_completo}, ensure_ascii=False, indent=2))
+        logger.info(f"Contexto: {contexto_completo}")
 
         for attempt in range(self.tentativas):
             model = self.modelo if attempt < self.tentativas - 1 else self.modelo_fallback
