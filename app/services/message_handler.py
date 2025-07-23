@@ -50,9 +50,10 @@ async def process_message(body: dict) -> dict:
         updater = UserInfoUpdater(mensagem=webhook_process.mensagem_consolidada, user_info=user_info.user_info, funnel_info=funnel_info.funnel, telefone_cliente=webhook.connectedPhone, telefone_usuario=webhook.phone)
         await updater.process()
 
-        logger.info(f"Estado Atual: {updater.user_info.data.get('tipo_cliente')}")
-        tipo_cliente = updater.user_info.data.get('tipo_cliente')
-        if tipo_cliente not in ('paciente_existente', 'outros_assuntos'):
+        tipo_cliente = updater.user_info.state
+        logger.info(f"Estado Atual: {updater.user_info.state}")
+
+        if tipo_cliente != ('atendimento_humano'):
             chat_input = ChatInput(
             mensagem=webhook_process.mensagem_consolidada,
             best_chunks=chunks.best_chunks,
