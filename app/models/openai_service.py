@@ -133,8 +133,7 @@ class FallbackLLM:
         self.max_tokens = max_tokens
         self.resposta: str = ""
 
-    async def generate_fallback_llm(self, prompt_fallback_llm) -> str:
-        self.prompt_fallback_llm = prompt_fallback_llm
+    async def generate_fallback_llm(self) -> str:
         system_msg = self.build_system_content_fallback_llm()
         messages = self.build_messages(system_msg)
         logger.info("=== CONTEXTO FALLBACK LLM ENVIADO AO GPT ===")
