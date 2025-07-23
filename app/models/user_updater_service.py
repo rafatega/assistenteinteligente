@@ -44,7 +44,7 @@ class UserInfoUpdater:
 
         if not pode_validar:
             return
-
+        logger.info(f"etapa: {etapa}")
         valor_extraido = await self._extrair_valor(etapa)
         if valor_extraido is not None:
             self.user_info.data[estado_id] = valor_extraido
@@ -78,7 +78,7 @@ class UserInfoUpdater:
                     return chave
         
         # FALLBACK LLM
-        fallback_prompt = etapa.get("fallback_llm")
+        fallback_prompt = getattr(etapa, "fallback_llm", None)
         if fallback_prompt:
             resposta_llm = await self._fallback_llm_dinamico(fallback_prompt)
             logger.info(f"resposta_llm: {resposta_llm}")
