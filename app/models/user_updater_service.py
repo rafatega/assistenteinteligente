@@ -2,23 +2,26 @@ import json
 import re
 import copy
 import openai
-from typing import Any, Tuple, Optional
+from typing import Any, Tuple, Optional, Any
 from app.config.redis_client import redis_client
 from app.utils.logger import logger
 from app.models.user_info import UserInfo
 from app.models.funnel_service import FunnelInfo
+from app.models.openai_service import FallbackLLM
+
 
 RETRY_ATTEMPTS = 2
 CHAT_MODEL = "gpt-4"
 FALLBACK_MODEL = "gpt-3.5-turbo"
 
 class UserInfoUpdater:                                                                                                                          #14400
-    def __init__(self, mensagem: str, user_info: UserInfo, funnel_info: FunnelInfo, telefone_cliente: str, telefone_usuario: str, cache_ttl: Optional[int] = 180):
+    def __init__(self, mensagem: str, user_info: UserInfo, funnel_info: FunnelInfo, telefone_cliente: str, telefone_usuario: str, historico: Any, cache_ttl: Optional[int] = 180):
         self.mensagem = mensagem.lower()
         self.user_info = user_info
         self.funnel_info = funnel_info
         self.telefone_cliente = telefone_cliente
         self.telefone_usuario = telefone_usuario
+        self.historico = historico
         self.cache_ttl = cache_ttl
 
         self.original_snapshot = copy.deepcopy(user_info.to_dict())
@@ -53,43 +56,54 @@ class UserInfoUpdater:                                                          
     async def _extrair_valor(self, etapa: Any) -> Optional[str]:
 
         # REGEX
-        for pattern in etapa.regex or []:
-            match = re.search(pattern, self.mensagem)
-            if match:
-                grupos = match.groupdict()
-                logger.info("Dado registrado por Regex.")
-                return next(iter(grupos.values()), None)
+        #for pattern in etapa.regex or []:
+        #    match = re.search(pattern, self.mensagem)
+        #    if match:
+        #        grupos = match.groupdict()
+        #        logger.info("Dado registrado por Regex.")
+        #        return next(iter(grupos.values()), None)
 
         # HEURÍSTICA
-        for chave, regras in (etapa.aliases or {}).items():
-            if not isinstance(regras, dict):
-                continue
+        #for chave, regras in (etapa.aliases or {}).items():
+        #    if not isinstance(regras, dict):
+        #        continue
 
-            for frase in regras.get("frases") or []:
-                if frase.lower() in self.mensagem:
-                    logger.info("Dado registrado pela Heurística.")
-                    return chave
+        #    for frase in regras.get("frases") or []:
+        #        if frase.lower() in self.mensagem:
+        #            logger.info("Dado registrado pela Heurística.")
+        #            return chave
 
-            tokens = [t.lower() for t in self.mensagem.split()]
-            for palavra in regras.get("palavras") or []:
-                if palavra.lower() in tokens:
-                    logger.info("Dado registrado pela Heurística.")
-                    return chave
+        #    tokens = [t.lower() for t in self.mensagem.split()]
+        #    for palavra in regras.get("palavras") or []:
+        #        if palavra.lower() in tokens:
+        #            logger.info("Dado registrado pela Heurística.")
+        #            return chave
         
         # FALLBACK LLM
-        estado_original = self.original_snapshot.get("state", "")
-        if estado_original == etapa.id:
-            fallback_prompt = getattr(etapa, "fallback_llm", None)
-            if fallback_prompt:
-                resposta_llm = await self.chamar_llm(fallback_prompt, self.mensagem)
-                logger.info(f"resposta_llm: {resposta_llm}")
-                if resposta_llm:
-                    resposta = resposta_llm.strip().lower()
-                    logger.info("Dado registrado pelo Fallback LLM.")
-                    return resposta
-                return None
-                
+        fallback_prompt = getattr(etapa, "fallback_llm", None)
+        if fallback_prompt:
+            objeto_fallback = FallbackLLM(self.mensagem, fallback_prompt, self.historico)
+            resposta_llm = await objeto_fallback.generate_fallback_llm()
+            if resposta_llm:
+                resposta = resposta_llm.strip().lower()
+                logger.info("Dado registrado pelo Fallback LLM.")
+                return resposta
+            return None
         return None
+
+        #estado_original = self.original_snapshot.get("state", "")
+        #if estado_original == etapa.id:
+        #    fallback_prompt = getattr(etapa, "fallback_llm", None)
+        #    if fallback_prompt:
+        #        resposta_llm = await self.chamar_llm(fallback_prompt, self.mensagem)
+        #        logger.info(f"resposta_llm: {resposta_llm}")
+        #        if resposta_llm:
+        #            resposta = resposta_llm.strip().lower()
+        #            logger.info("Dado registrado pelo Fallback LLM.")
+        #            return resposta
+        #        return None
+                
+        
 
     def _definir_prompt_para_etapa(self, etapa: Any, valor_atual: Any) -> None:
         if not self.first_prompt:

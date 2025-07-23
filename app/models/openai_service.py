@@ -118,3 +118,74 @@ class ChatResponder:
         logger.critical("[ChatResponder] falha total ao gerar resposta.")
         self.resposta = "Desculpe, ocorreu um erro ao processar sua pergunta."
         return self.resposta
+
+# Classe responsável por fazer o envio pro chat gpt;
+class FallbackLLM:
+    def __init__(self,  mensagem: str = "", prompt_fallback_llm: str = "", historico: str = "", modelo="gpt-4o-mini", modelo_fallback="gpt-3.5-turbo", tentativas: int = 3, temperature: float = 0, top_p: float = 0.9, max_tokens: int = 10):
+        self.mensagem = mensagem
+        self.prompt_fallback_llm = prompt_fallback_llm
+        self.historico = historico
+        self.modelo = modelo
+        self.modelo_fallback = modelo_fallback
+        self.tentativas = tentativas
+        self.temperature = temperature
+        self.top_p = top_p
+        self.max_tokens = max_tokens
+        self.resposta: str = ""
+
+    async def generate_fallback_llm(self, prompt_fallback_llm) -> str:
+        self.prompt_fallback_llm = prompt_fallback_llm
+        system_msg = self.build_system_content_fallback_llm()
+        messages = self.build_messages(system_msg)
+        logger.info("=== CONTEXTO FALLBACK LLM ENVIADO AO GPT ===")
+        logger.info(system_msg.replace("\n", "\\n"))
+
+        for i in range(self.tentativas):
+            model = self.modelo if i < self.tentativas - 1 else self.modelo_fallback
+            try:
+                response = await openai.ChatCompletion.acreate(
+                    model=model,
+                    messages=messages,
+                    temperature=self.temperature,
+                    top_p=self.top_p,
+                    max_tokens=self.max_tokens
+                )
+                self.resposta = response.choices[0].message.content.strip()
+                return self.resposta
+            except Exception as e:
+                logger.error(f"[ChatResponder] erro (tentativa {i+1}, modelo {model}): {e}")
+    
+    def build_system_content_fallback_llm(self) -> str:
+        return "\n".join([
+            "[INSTRUÇÕES DA DIANA]",
+            textwrap.dedent(self.prompt_fallback_llm or "").strip(),
+            "[HISTÓRICO DE CONVERSA]",
+            self.formatar_historico()
+        ]).strip()
+    
+    def build_messages(self, system_content: str) -> List[Dict]:
+        return [
+            {"role": "system", "content": system_content},
+            {"role": "user", "content": self.mensagem.strip()}
+        ]
+    
+    def formatar_historico(self) -> str:
+        historico = self.input.historico
+        if isinstance(historico, str):
+            try:
+                historico = json.loads(historico)
+            except json.JSONDecodeError:
+                return "(Histórico inválido ou não disponível.)"
+        if not historico:
+            return "(Sem histórico de conversa até o momento.)"
+
+        role_map = {
+            "system": "🧠 Sistema",
+            "assistant": "🤖 Assistente",
+            "user": "🧍 Paciente"
+        }
+
+        return "\n".join(
+            f"{role_map.get(m.get('role'), m.get('role'))}: {m.get('content', '').strip()}"
+            for m in historico
+        )
