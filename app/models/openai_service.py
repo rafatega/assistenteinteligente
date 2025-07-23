@@ -169,7 +169,7 @@ class FallbackLLM:
         ]
     
     def formatar_historico(self) -> str:
-        historico = self.input.historico
+        historico = self.historico
         if isinstance(historico, str):
             try:
                 historico = json.loads(historico)
