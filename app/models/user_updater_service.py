@@ -77,9 +77,8 @@ class UserInfoUpdater:
                     return chave
         
         # FALLBACK LLM
-        logger.info(f"original_snapshot.state: {self.original_snapshot}")
-        logger.info(f"etapa.id: {etapa.id}")
-        if self.original_snapshot.state == etapa.id:
+        estado_original = self.original_snapshot.get("state", "")
+        if estado_original == etapa.id:
             fallback_prompt = getattr(etapa, "fallback_llm", None)
             if fallback_prompt:
                 resposta_llm = await self._fallback_llm_dinamico(fallback_prompt)
