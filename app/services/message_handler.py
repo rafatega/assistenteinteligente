@@ -49,21 +49,23 @@ async def process_message(body: dict) -> dict:
         #updated_user_info, updated_prompt = await calculate_user_info(webhook_process.mensagem_consolidada, user_info.user_info, funnel_info.funnel, webhook.connectedPhone, webhook.phone)
         updater = UserInfoUpdater(mensagem=webhook_process.mensagem_consolidada, user_info=user_info.user_info, funnel_info=funnel_info.funnel, telefone_cliente=webhook.connectedPhone, telefone_usuario=webhook.phone)
         await updater.process()
-        logger.info(f"updater.user_info.data: {updater.user_info.data}")
 
-        chat_input = ChatInput(
-        mensagem=webhook_process.mensagem_consolidada,
-        best_chunks=chunks.best_chunks,
-        historico=historico.mensagens,
-        prompt_base=funnel_info.funnel.prompt_base,
-        prompt_state=updater.response_prompt,
-        user_data=updater.user_info
-    )
-        responder = ChatResponder(chat_input)
-        await responder.generate()
+        logger.info(f"Estado Atual: {updater.user_info.data.get('tipo_cliente')}")
+        tipo_cliente = updater.user_info.data.get('tipo_cliente')
+        if tipo_cliente in ('paciente_existente', 'outros_assuntos'):
+            chat_input = ChatInput(
+            mensagem=webhook_process.mensagem_consolidada,
+            best_chunks=chunks.best_chunks,
+            historico=historico.mensagens,
+            prompt_base=funnel_info.funnel.prompt_base,
+            prompt_state=updater.response_prompt,
+            user_data=updater.user_info
+        )
+            responder = ChatResponder(chat_input)
+            await responder.generate()
 
-        prepara_envio = MensagemDispatcher(webhook.phone, responder.resposta, config_info.zapi_instance_id, config_info.zapi_token)
-        await prepara_envio.enviar_resposta()
+            prepara_envio = MensagemDispatcher(webhook.phone, responder.resposta, config_info.zapi_instance_id, config_info.zapi_token)
+            await prepara_envio.enviar_resposta()
 
         historico.adicionar_interacao("user", webhook_process.mensagem_consolidada)
         await historico.salvar()
