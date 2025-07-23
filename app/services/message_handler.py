@@ -52,7 +52,7 @@ async def process_message(body: dict) -> dict:
 
         logger.info(f"Estado Atual: {updater.user_info.data.get('tipo_cliente')}")
         tipo_cliente = updater.user_info.data.get('tipo_cliente')
-        if tipo_cliente in ('paciente_existente', 'outros_assuntos'):
+        if tipo_cliente not in ('paciente_existente', 'outros_assuntos'):
             chat_input = ChatInput(
             mensagem=webhook_process.mensagem_consolidada,
             best_chunks=chunks.best_chunks,
