@@ -81,7 +81,7 @@ class UserInfoUpdater:
         if estado_original == etapa.id:
             fallback_prompt = getattr(etapa, "fallback_llm", None)
             if fallback_prompt:
-                resposta_llm = await self._fallback_llm_dinamico(fallback_prompt)
+                resposta_llm = await self.chamar_llm(fallback_prompt, self.mensagem)
                 logger.info(f"resposta_llm: {resposta_llm}")
                 if resposta_llm:
                     resposta = resposta_llm.strip().lower()
@@ -118,20 +118,15 @@ class UserInfoUpdater:
         etapa_final = next((e for e in self.funnel_info.funil if e.id == "esperando_humano"), None)
         return etapa_final.prompt if etapa_final else "Muito obrigado! Em breve a Jaqueline irá te atender por aqui."
     
-    async def _fallback_llm_dinamico(self, fallback_prompt: str) -> str:
-        prompt = f"""{fallback_prompt}\n\nMensagem recebida:\n"{self.mensagem}"
-"""
-        return (await self.chamar_llm(prompt)).strip()
-    
     @staticmethod
-    async def chamar_llm(prompt: str) -> str:
+    async def chamar_llm(prompt: str, mensagem: str) -> str:
         for attempt in range(RETRY_ATTEMPTS):
             try:
                 response = await openai.ChatCompletion.acreate(
                     model = CHAT_MODEL if attempt < RETRY_ATTEMPTS - 1 else FALLBACK_MODEL,
                     messages=[
-                        {"role": "system", "content": "Você é uma assistente de classificação de mensagens médicas."},
-                        {"role": "user", "content": prompt}
+                        {"role": "system", "content": prompt},
+                        {"role": "user", "content": mensagem}
                     ],
                     temperature=0,
                     max_tokens=10,
