@@ -93,7 +93,8 @@ class UserInfoUpdater:
 
     def _definir_prompt_para_etapa(self, etapa: Any, valor_atual: Any) -> None:
         if not self.first_prompt:
-            if etapa.obrigatorio or valor_atual is None or self.user_info.state != etapa.id:
+            #if etapa.obrigatorio or valor_atual is None or self.user_info.state != etapa.id:
+            if (etapa.obrigatorio and valor_atual is None and self.user_info.state != etapa.id) or (valor_atual is None and self.user_info.state != etapa.id):
                 self.first_prompt = (etapa.id, etapa.prompt)
             elif not etapa.obrigatorio and self.user_info.state == etapa.id:
                 self.user_info.data[etapa.id] = "Nao informado"
