@@ -45,7 +45,7 @@ class UserInfoUpdater:
         if not pode_validar:
             return
 
-        valor_extraido = self._extrair_valor(etapa)
+        valor_extraido = await self._extrair_valor(etapa)
         if valor_extraido is not None:
             self.user_info.data[estado_id] = valor_extraido
         else:
@@ -71,7 +71,7 @@ class UserInfoUpdater:
                     logger.info("Dado registrado pela Heurística.")
                     return chave
 
-            tokens = self.mensagem.split()
+            tokens = [t.lower() for t in self.mensagem.split()]
             for palavra in regras.get("palavras") or []:
                 if palavra.lower() in tokens:
                     logger.info("Dado registrado pela Heurística.")
