@@ -46,8 +46,8 @@ class FunnelInfo:
 class FunnelService:
     TABLE = "account_data"
     FIELD = "funnel_info"
-
-    def __init__(self, telefone_cliente: str, cache_ttl: Optional[int] = 43200, redis_client: Any = redis_client, supabase_client: Any = supabase):
+                                                                    #43200
+    def __init__(self, telefone_cliente: str, cache_ttl: Optional[int] = 180, redis_client: Any = redis_client, supabase_client: Any = supabase):
         self.telefone = telefone_cliente
         self.cache_ttl = cache_ttl
         self.redis_client = redis_client
