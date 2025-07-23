@@ -6,8 +6,8 @@ from app.config.redis_client import redis_client
 
 class HistoricoConversas:
     PREFIX = "history:"
-
-    def __init__(self, telefone_cliente: str, telefone_usuario: str, redis_client: Any = redis_client, tentativas: int = 3, mensagens: list = [], cache_ttl_seconds: int = 14400):
+                                                                                                                                                                #14400
+    def __init__(self, telefone_cliente: str, telefone_usuario: str, redis_client: Any = redis_client, tentativas: int = 3, mensagens: list = [], cache_ttl_seconds: int = 180):
         self.key = f"{self.PREFIX}{telefone_cliente}:{telefone_usuario}"
         self.redis = redis_client
         self.tentativas = tentativas
