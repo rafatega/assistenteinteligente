@@ -85,7 +85,7 @@ class UserInfoUpdater:                                                          
             fallback_prompt = getattr(etapa, "fallback_llm", None)
             if fallback_prompt:
                 objeto_fallback = FallbackLLM(self.mensagem, fallback_prompt, self.historico)
-                resposta_llm = await objeto_fallback.generate_fallback_llm()
+                resposta_llm = objeto_fallback.generate_fallback_llm() # retirei o await
                 if resposta_llm:
                     resposta = resposta_llm.strip().lower()
                     logger.info("Dado registrado pelo Fallback LLM.")
