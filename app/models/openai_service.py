@@ -131,7 +131,7 @@ class FallbackLLM:
         self.temperature = temperature
         self.top_p = top_p
         self.max_tokens = max_tokens
-        self.resposta: str = ""
+        self.resposta: Any = None
 
     async def generate_fallback_llm(self) -> str:
         system_msg = self.build_system_content_fallback_llm()
@@ -149,7 +149,11 @@ class FallbackLLM:
                     top_p=self.top_p,
                     max_tokens=self.max_tokens
                 )
-                self.resposta = response.choices[0].message.content.strip()
+                resposta_llm = response.choices[0].message.content.strip()
+                if self.resposta != 'nao_identificado':
+                    self.resposta = resposta_llm   
+                else:
+                    self.resposta = None
                 return self.resposta
             except Exception as e:
                 logger.error(f"[ChatResponder] erro (tentativa {i+1}, modelo {model}): {e}")

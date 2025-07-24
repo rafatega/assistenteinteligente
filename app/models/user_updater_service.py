@@ -113,7 +113,7 @@ class UserInfoUpdater:                                                          
             if (etapa.obrigatorio and valor_atual is None and self.user_info.state != etapa.id) or (valor_atual is None and self.user_info.state != etapa.id):
                 self.first_prompt = (etapa.id, etapa.prompt)
             elif not etapa.obrigatorio and self.user_info.state == etapa.id:
-                self.user_info.data[etapa.id] = "Nao informado"
+                self.user_info.data[etapa.id] = "nao_informado"
 
     def _atualizar_estado(self) -> None:
         if self.first_prompt:
@@ -123,7 +123,7 @@ class UserInfoUpdater:                                                          
 
     async def _salvar_se_necessario(self) -> None:
         # Muda estado caso seja paciente antigo ou outros assuntos;
-        if self.user_info.data.get('tipo_cliente') in ('paciente_existente', 'outros_assuntos', 'nao_identificado'):
+        if self.user_info.data.get('tipo_cliente') in ('paciente_existente', 'outros_assuntos', 'nao_informado'):
             self.user_info.state = "atendimento_humano"
         current = self.user_info.to_dict()
         if current != self.original_snapshot:
