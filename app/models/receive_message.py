@@ -40,7 +40,7 @@ class WebhookProcessor:
         mensagem = await self.extrair_mensagem()
 
         if not mensagem:
-            logger.info(f"[🔕 IGNORADO] Mensagem vazia | {self.webhook.phone}")
+            #logger.info(f"[🔕 IGNORADO] Mensagem vazia | {self.webhook.phone}")
             mensagem = None
 
         if self.debounce_timeout > 0:
@@ -104,6 +104,6 @@ class WebhookProcessor:
             debounce_tasks.pop(task_key, None)
             debounce_futures.pop(task_key, None)
 
-            logger.info(f"[✅ Consolidado debounce] {resultado}")
+            #logger.info(f"[✅ Consolidado debounce] {resultado}")
         except asyncio.CancelledError:
             logger.info(f"[⛔️ Debounce cancelado] {task_key}")

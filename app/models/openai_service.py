@@ -133,7 +133,7 @@ class FallbackLLM:
         self.max_tokens = max_tokens
         self.resposta: Any = None
 
-    def generate_fallback_llm(self) -> str: # Retirei o async
+    async def generate_fallback_llm(self) -> str:
         system_msg = self.build_system_content_fallback_llm()
         messages = self.build_messages(system_msg)
         logger.info("=== CONTEXTO FALLBACK LLM ENVIADO AO GPT ===")
@@ -142,7 +142,7 @@ class FallbackLLM:
         for i in range(self.tentativas):
             model = self.modelo if i < self.tentativas - 1 else self.modelo_fallback
             try:
-                response = openai.ChatCompletion.acreate( # Retirei o await
+                response = await openai.ChatCompletion.acreate(
                     model=model,
                     messages=messages,
                     temperature=self.temperature,

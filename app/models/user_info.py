@@ -76,12 +76,8 @@ class UserInfoService:
         return await self.create_initial_user_info(redis_key)
 
     async def create_initial_user_info(self, redis_key: str) -> UserInfo:
-        logger.info("Cheguei no CREATE INICIAL")
         tracking_dict = self.funnel_info.to_tracking_dict(estado_atual=None)
-        logger.info(f"tracking_dict: {tracking_dict}")
         initial_info = UserInfo(**tracking_dict)
-        logger.info(f"initial_info: {initial_info}")
-
         try:
             await self.redis_client.set(redis_key, json.dumps(initial_info.to_dict()), ex=self.cache_ttl)
             logger.info(f"[UserInfoService] Registro criado ou atualizado para {self.telefone_usuario}")
