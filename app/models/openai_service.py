@@ -150,7 +150,7 @@ class FallbackLLM:
                     max_tokens=self.max_tokens
                 )
                 resposta_llm = response.choices[0].message.content.strip()
-                if self.resposta != 'nao_identificado':
+                if resposta_llm not in {"nao_identificado", "não_identificado"}:
                     self.resposta = resposta_llm   
                 else:
                     self.resposta = None
