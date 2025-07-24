@@ -123,7 +123,7 @@ class UserInfoUpdater:                                                          
 
     async def _salvar_se_necessario(self) -> None:
         # Muda estado caso seja paciente antigo ou outros assuntos;
-        if self.user_info.data.get('tipo_cliente') in ('paciente_existente', 'outros_assuntos'):
+        if self.user_info.data.get('tipo_cliente') in ('paciente_existente', 'outros_assuntos', 'nao_identificado'):
             self.user_info.state = "atendimento_humano"
         current = self.user_info.to_dict()
         if current != self.original_snapshot:
