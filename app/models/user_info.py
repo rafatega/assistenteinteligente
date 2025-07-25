@@ -57,7 +57,6 @@ class UserInfoService:
             res = self.supabase_client.table(self.TABLE)\
                 .select(self.FIELD)\
                 .eq("id_cliente_usuario", id_cliente_usuario)\
-                .order("id", desc=True)\
                 .limit(1)\
                 .execute()
 
