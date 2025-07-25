@@ -1,6 +1,7 @@
 import json
 import asyncio
 from typing import Any
+from datetime import datetime
 from app.utils.logger import logger
 from app.config.redis_client import redis_client
 from app.config.supabase_client import supabase
@@ -66,14 +67,35 @@ class HistoricoConversas:
             "content": content
         })
 
-    async def salvar_cache(self, max_mensagens: int = 8):
+    async def salvar(self, max_mensagens: int = 8):
         mensagens_finais = self.mensagens[-max_mensagens:]
+
+        # Tenta salvar no Redis
         for tentativa in range(self.tentativas):
             try:
                 await self.redis.set(self.key, json.dumps(mensagens_finais), ex=self.cache_ttl_seconds)
-                return
+                break
             except Exception as e:
                 logger.error(f"[{self.key}] Erro Redis SET ({tentativa+1}): {e}")
                 await asyncio.sleep(1)
-        logger.critical(f"[{self.key}] Falha ao salvar histórico no Redis.")
+        else:
+            logger.critical(f"[{self.key}] Falha ao salvar histórico no Redis.")
+
+        # Salva também no Supabase
+        try:
+            id_cliente_usuario = f"{self.telefone_cliente}:{self.telefone_usuario}"
+            # Gerar updated_at no fuso de São Paulo, sem offset
+            updated_at = datetime.now().astimezone().isoformat()
+
+            supabase.table(self.TABLE).upsert({
+                "id_cliente_usuario": id_cliente_usuario,
+                "telefone_cliente": self.telefone_cliente,
+                "telefone_usuario": self.telefone_usuario,
+                "history": mensagens_finais,
+                "updated_at": updated_at
+            }, 
+            on_conflict=["id_cliente_usuario"]
+            ).execute()
+        except Exception as e:
+            logger.error(f"[{self.key}] Erro ao salvar histórico no Supabase: {e}")
 
