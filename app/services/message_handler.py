@@ -73,11 +73,11 @@ async def process_message(body: dict) -> dict:
                 await prepara_envio.enviar_resposta()
 
         historico.adicionar_interacao("user", webhook_process.mensagem_consolidada)
-        await historico.salvar()
+        await historico.salvar_cache()
 
     elif webhook.fromMe:
         historico.adicionar_interacao("assistant", webhook_process.mensagem_consolidada)
-        await historico.salvar()
+        await historico.salvar_cache()
         
     else:
         logger.info(f"[🔕 IGNORADO] Mensagem do próprio bot/assistente: {webhook.phone} - {webhook.connectedPhone}")

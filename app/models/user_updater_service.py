@@ -2,8 +2,10 @@ import json
 import re
 import copy
 import openai
+from datetime import datetime
 from typing import Any, Tuple, Optional, Any
 from app.config.redis_client import redis_client
+from app.config.supabase_client import supabase
 from app.utils.logger import logger
 from app.models.user_info import UserInfo
 from app.models.funnel_service import FunnelInfo
@@ -123,6 +125,7 @@ class UserInfoUpdater:                                                          
             self.user_info.state = "esperando_humano"
 
     async def _salvar_se_necessario(self) -> None:
+        # Cache Redis
         # Muda estado caso seja paciente antigo ou outros assuntos;
         if self.user_info.data.get('tipo_cliente') in ('paciente_existente', 'outros_assuntos', 'nao_informado'):
             self.user_info.state = "atendimento_humano"
@@ -131,6 +134,22 @@ class UserInfoUpdater:                                                          
             key = f"user_info:{self.telefone_cliente}:{self.telefone_usuario}"
             await redis_client.set(key, json.dumps(current), ex=self.cache_ttl)
             logger.info(f"[UserInfoUpdater] Redis atualizado para {self.telefone_usuario}")
+
+            # Supabase
+            id_cliente_usuario = f"{self.telefone_cliente}:{self.telefone_usuario}"
+            updated_at = datetime.now().astimezone().isoformat()
+            try:
+                supabase.table("user_data").upsert({
+                    "id_cliente_usuario": id_cliente_usuario,
+                    "telefone_cliente": self.telefone_cliente,
+                    "telefone_usuario": self.telefone_usuario,
+                    "user_info": json.dumps(current),
+                    "updated_at": updated_at
+                },
+                on_conflict=["id_cliente_usuario"]
+                ).execute()
+            except Exception as e:
+                logger.error(f"[update_user_funnel] Supabase error: {e}")
 
     def _get_response_prompt(self) -> str:
         if self.first_prompt:
