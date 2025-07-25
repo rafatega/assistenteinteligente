@@ -63,10 +63,8 @@ class UserInfoService:
             if res.data:
                 raw = res.data[0].get(self.FIELD)
                 if raw:
-                    logger.info(f"Dado RAW vindo do Supabase: {raw}")
                     user_info = UserInfo.from_dict(json.loads(raw))
                     user_info = self.sync_with_funnel(user_info)
-                    logger.info(f"Dado formatado vindo do Supabase: {raw}")
                     await self.redis_client.set(redis_key, json.dumps(user_info.to_dict()), ex=self.cache_ttl)
                     return user_info
 

@@ -3,16 +3,20 @@ import asyncio
 from typing import Any
 from app.utils.logger import logger
 from app.config.redis_client import redis_client
+from app.config.supabase_client import supabase
 
 class HistoricoConversas:
-    PREFIX = "history:"
+    TABLE = "user_data"
+    FIELD = "history"
                                                                                                                                                                 #14400
     def __init__(self, telefone_cliente: str, telefone_usuario: str, redis_client: Any = redis_client, tentativas: int = 3, mensagens: list = [], cache_ttl_seconds: int = 180):
-        self.key = f"{self.PREFIX}{telefone_cliente}:{telefone_usuario}"
+        self.telefone_cliente = telefone_cliente
+        self.telefone_usuario = telefone_usuario
         self.redis = redis_client
         self.tentativas = tentativas
         self.mensagens = mensagens
         self.cache_ttl_seconds = cache_ttl_seconds
+        self.key = f"{self.FIELD}:{telefone_cliente}:{telefone_usuario}"
 
     async def carregar(self):
         for tentativa in range(self.tentativas):
@@ -21,13 +25,40 @@ class HistoricoConversas:
                 if data:
                     self.mensagens = json.loads(data)
                 else:
-                    self.mensagens = [self._mensagem_inicial()]
+                    await self._carregar_de_supabase()
                 return
             except Exception as e:
                 logger.error(f"[{self.key}] Erro Redis GET ({tentativa+1}): {e}")
                 await asyncio.sleep(1)
-        logger.critical(f"[{self.key}] Falha ao acessar Redis. Histórico mínimo carregado.")
+
+        logger.critical(f"[{self.self.key}] Falha ao acessar Redis. Histórico mínimo carregado.")
         self.mensagens = [self._mensagem_inicial()]
+    
+    async def _carregar_de_supabase(self):
+        try:
+            id_cliente_usuario = f"{self.telefone_cliente}:{self.telefone_usuario}"
+            res = supabase.table(self.TABLE)\
+                .select(self.FIELD)\
+                .eq("id_cliente_usuario", id_cliente_usuario)\
+                .limit(1)\
+                .execute()
+
+            if res.data and res.data[0].get(self.FIELD):
+                self.mensagens = res.data[0][self.FIELD]
+                logger.info(f"[{self.key}] Histórico carregado via Supabase.")
+                await self.redis.set(self.key, json.dumps(self.mensagens), ex=self.cache_ttl_seconds)
+            else:
+                logger.info(f"[{self.key}] Nenhum histórico encontrado no Supabase.")
+                self.mensagens = [self._mensagem_inicial()]
+        except Exception as e:
+            logger.error(f"[{self.key}] Erro ao consultar Supabase: {e}")
+            self.mensagens = [self._mensagem_inicial()]
+    
+    def _mensagem_inicial(self) -> dict:
+        return {
+            "role": "system",
+            "content": "O cliente não tem histórico de interações com a empresa."
+        }
 
     def adicionar_interacao(self, role: str, content: str):
         self.mensagens.append({
@@ -46,8 +77,3 @@ class HistoricoConversas:
                 await asyncio.sleep(1)
         logger.critical(f"[{self.key}] Falha ao salvar histórico no Redis.")
 
-    def _mensagem_inicial(self) -> dict:
-        return {
-            "role": "system",
-            "content": "O cliente não tem histórico de interações com a empresa."
-        }
