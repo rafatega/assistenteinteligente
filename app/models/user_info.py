@@ -53,10 +53,10 @@ class UserInfoService:
 
     async def get_from_supabase(self, redis_key: str) -> UserInfo:
         try:
+            id_cliente_usuario = f"{self.telefone_cliente}:{self.telefone_usuario}"
             res = self.supabase_client.table(self.TABLE)\
                 .select(self.FIELD)\
-                .eq("telefone_cliente", self.telefone_cliente)\
-                .eq("telefone_usuario", self.telefone_usuario)\
+                .eq("id_cliente_usuario", id_cliente_usuario)\
                 .order("id", desc=True)\
                 .limit(1)\
                 .execute()
@@ -64,8 +64,10 @@ class UserInfoService:
             if res.data:
                 raw = res.data[0].get(self.FIELD)
                 if raw:
+                    logger.info(f"Dado RAW vindo do Supabase: {raw}")
                     user_info = UserInfo.from_dict(raw)
                     user_info = self.sync_with_funnel(user_info)
+                    logger.info(f"Dado formatado vindo do Supabase: {raw}")
                     await self.redis_client.set(redis_key, json.dumps(user_info.to_dict()), ex=self.cache_ttl)
                     return user_info
 
