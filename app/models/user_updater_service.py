@@ -3,6 +3,7 @@ import re
 import copy
 import openai
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from typing import Any, Tuple, Optional, Any
 from app.config.redis_client import redis_client
 from app.config.supabase_client import supabase
@@ -137,7 +138,7 @@ class UserInfoUpdater:                                                          
 
             # Supabase
             id_cliente_usuario = f"{self.telefone_cliente}:{self.telefone_usuario}"
-            updated_at = datetime.now().astimezone().isoformat()
+            updated_at = datetime.now(ZoneInfo("America/Sao_Paulo")).isoformat()
             try:
                 supabase.table("user_data").upsert({
                     "id_cliente_usuario": id_cliente_usuario,
