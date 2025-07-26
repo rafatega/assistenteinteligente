@@ -44,7 +44,7 @@ class ConfigInfo:
         )
 
 class ConfigService:                                                                                                                    #43200
-    def __init__(self, telefone_cliente: str, redis_client: Any = redis_client, supabase_client: Any = supabase, cache_ttl: Optional[int] = 43200, config: Optional[ConfigInfo] = None):
+    def __init__(self, telefone_cliente: str, redis_client: Any = redis_client, supabase_client: Any = supabase, cache_ttl: Optional[int] = 180, config: Optional[ConfigInfo] = None):
         self.telefone_cliente = telefone_cliente
         self.redis_client = redis_client
         self.supabase = supabase_client
