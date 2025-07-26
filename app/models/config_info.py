@@ -37,6 +37,7 @@ class ConfigInfo:
     
     def desativar_assistente(self, mensagem: Optional[str]) -> bool:
         return (
+            logger.info(f"Parando assistente, humando em atendimento, chave: {self.chave_parar_atendimento}")
             self.chave_parar_atendimento is not None and
             mensagem is not None and
             self.chave_parar_atendimento in mensagem
