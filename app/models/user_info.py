@@ -92,5 +92,12 @@ class UserInfoService:
             etapa_id: user_info.data.get(etapa_id, None)
             for etapa_id in funnel_ids
         }
-        updated_state = user_info.state if user_info.state in funnel_ids else (funnel_ids[0] if funnel_ids else "")
+        # Regra especial: manter 'atendimento_humano' mesmo fora dos funnels
+        if user_info.state in funnel_ids or user_info.state == "atendimento_humano":
+            updated_state = user_info.state
+        elif funnel_ids:
+            updated_state = funnel_ids[0]
+        else:
+            updated_state = ""
+
         return UserInfo(state=updated_state, data=updated_data)
