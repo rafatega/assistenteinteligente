@@ -33,26 +33,27 @@ async def process_message(body: dict) -> dict:
     webhook_process = WebhookProcessor(webhook, config_info.tempo_espera_debounce)
     await webhook_process.processar()
 
+    funnel_info = FunnelService(webhook.connectedPhone)
+
+    user_info = UserInfoService(webhook.connectedPhone, webhook.phone, funnel_info.funnel)
+
+    updater = UserInfoUpdater(mensagem=webhook_process.mensagem_consolidada, user_info=user_info.user_info, funnel_info=funnel_info.funnel, telefone_cliente=webhook.connectedPhone, telefone_usuario=webhook.phone, historico=historico.mensagens)
+
     # Só processa se a mensagem não for do próprio bot/assistente
     if not webhook.fromMe:
-        chunks = BuscadorChunks(config_info.pinecone_index_name, config_info.pinecone_namespace)
-        await chunks.buscar(webhook_process.mensagem_consolidada)
 
-        #funnel_info = await fetch_funnel_info(webhook.connectedPhone)
-        funnel_info = FunnelService(webhook.connectedPhone)
         await funnel_info.get()
 
-        #user_info = await fetch_user_info(webhook.connectedPhone, webhook.phone, funnel_info.funnel_info)
-        user_info = UserInfoService(webhook.connectedPhone, webhook.phone, funnel_info.funnel)
         await user_info.get()
         
-        #updated_user_info, updated_prompt = await calculate_user_info(webhook_process.mensagem_consolidada, user_info.user_info, funnel_info.funnel, webhook.connectedPhone, webhook.phone)
-        updater = UserInfoUpdater(mensagem=webhook_process.mensagem_consolidada, user_info=user_info.user_info, funnel_info=funnel_info.funnel, telefone_cliente=webhook.connectedPhone, telefone_usuario=webhook.phone, historico=historico.mensagens)
         await updater.process()
 
         tipo_cliente = updater.user_info.state
 
         if tipo_cliente != ('atendimento_humano'):
+            chunks = BuscadorChunks(config_info.pinecone_index_name, config_info.pinecone_namespace)
+            await chunks.buscar(webhook_process.mensagem_consolidada)
+
             chat_input = ChatInput(
             mensagem=webhook_process.mensagem_consolidada,
             best_chunks=chunks.best_chunks,
@@ -76,6 +77,9 @@ async def process_message(body: dict) -> dict:
         await historico.salvar()
 
     elif webhook.fromMe:
+        if '😊' in webhook_process.mensagem_consolidada:
+            await updater.change_state()
+
         historico.adicionar_interacao("assistant", webhook_process.mensagem_consolidada)
         await historico.salvar()
         

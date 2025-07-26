@@ -38,6 +38,10 @@ class UserInfoUpdater:                                                          
         await self._salvar_se_necessario()
         self.response_prompt = self._get_response_prompt()
 
+    async def change_state(self) -> None:
+        self.user_info.state = "atendimento_humano"
+        await self._salvar_se_necessario()
+
     async def _processar_funil(self) -> None:
         for etapa in self.funnel_info.funil:
             await self._processar_etapa(etapa)
