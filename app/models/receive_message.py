@@ -34,7 +34,7 @@ class WebhookProcessor:
     def __init__(self, webhook: WebhookMessage, debounce_timeout: int):
         self.webhook = webhook
         self.debounce_timeout = debounce_timeout
-        self.debounce_timeout_assistant: int = 0
+        self.debounce_timeout_assistant: int = 3
         self.mensagem_consolidada = ""
 
     async def processar(self) -> WebhookMessage:
