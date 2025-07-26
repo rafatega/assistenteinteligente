@@ -75,7 +75,7 @@ async def process_message(body: dict) -> dict:
         await historico.salvar()
 
     elif webhook.fromMe:
-        if '😊' in webhook_process.mensagem_consolidada:
+        if config_info.desativar_assistente(webhook_process.mensagem_consolidada):
             await updater.change_state()
 
         historico.adicionar_interacao("assistant", webhook_process.mensagem_consolidada)

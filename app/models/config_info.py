@@ -12,6 +12,7 @@ class ConfigInfo:
     pinecone_namespace: str
     pinecone_index_name: str
     tempo_espera_debounce: Optional[int] = 0
+    chave_parar_atendimento: Optional[str] = None
 
     @classmethod
     def from_dict(cls, data: dict) -> "ConfigInfo":
@@ -21,6 +22,7 @@ class ConfigInfo:
             pinecone_namespace=data.get("pinecone_namespace", ""),
             pinecone_index_name=data.get("pinecone_index_name", ""),
             tempo_espera_debounce=data.get("tempo_espera_debounce", 0),
+            chave_parar_atendimento=data.get("chave_parar_atendimento", None)
         )
 
     def to_dict(self) -> dict:
@@ -30,7 +32,15 @@ class ConfigInfo:
             "pinecone_namespace": self.pinecone_namespace,
             "pinecone_index_name": self.pinecone_index_name,
             "tempo_espera_debounce": self.tempo_espera_debounce,
+            "chave_parar_atendimento": self.chave_parar_atendimento
         }
+    
+    def desativar_assistente(self, mensagem: Optional[str]) -> bool:
+        return (
+            self.chave_parar_atendimento is not None and
+            mensagem is not None and
+            self.chave_parar_atendimento in mensagem
+        )
 
 class ConfigService:                                                                                                                    #43200
     def __init__(self, telefone_cliente: str, redis_client: Any = redis_client, supabase_client: Any = supabase, cache_ttl: Optional[int] = 180, config: Optional[ConfigInfo] = None):
