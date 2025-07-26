@@ -75,11 +75,11 @@ async def process_message(body: dict) -> dict:
         await historico.salvar()
 
     elif webhook.fromMe:
-        if config_info.desativar_assistente(webhook_process.mensagem_consolidada):
-            await updater.change_state()
-
         historico.adicionar_interacao("assistant", webhook_process.mensagem_consolidada)
         await historico.salvar()
+        
+        if config_info.desativar_assistente(webhook_process.mensagem_consolidada):
+            await updater.change_state()
         
     else:
         logger.info(f"[🔕 IGNORADO] Mensagem do próprio bot/assistente: {webhook.phone} - {webhook.connectedPhone}")
