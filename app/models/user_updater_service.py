@@ -123,6 +123,8 @@ class UserInfoUpdater:                                                          
                 self.user_info.data[etapa.id] = "nao_informado"
 
     def _atualizar_estado(self) -> None:
+        if self.user_info.state == "atendimento_humano":
+            return
         if self.first_prompt:
             self.user_info.state = self.first_prompt[0]
         else:

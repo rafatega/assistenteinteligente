@@ -43,12 +43,12 @@ async def process_message(body: dict) -> dict:
 
     # Só processa se a mensagem não for do próprio bot/assistente
     if not webhook.fromMe:
+        # Responsável por atualizar os dados do cliente (UserInfo)
+        await updater.process()
 
         tipo_cliente = updater.user_info.state
         if tipo_cliente != ('atendimento_humano'):
-            # Responsável por atualizar os dados do cliente (UserInfo)
-            await updater.process()
-
+            
             chunks = BuscadorChunks(config_info.pinecone_index_name, config_info.pinecone_namespace)
             await chunks.buscar(webhook_process.mensagem_consolidada)
 
