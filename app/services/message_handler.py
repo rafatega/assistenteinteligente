@@ -34,17 +34,15 @@ async def process_message(body: dict) -> dict:
     await webhook_process.processar()
 
     funnel_info = FunnelService(webhook.connectedPhone)
+    await funnel_info.get()
 
     user_info = UserInfoService(webhook.connectedPhone, webhook.phone, funnel_info.funnel)
+    await user_info.get()
 
     updater = UserInfoUpdater(mensagem=webhook_process.mensagem_consolidada, user_info=user_info.user_info, funnel_info=funnel_info.funnel, telefone_cliente=webhook.connectedPhone, telefone_usuario=webhook.phone, historico=historico.mensagens)
 
     # Só processa se a mensagem não for do próprio bot/assistente
     if not webhook.fromMe:
-
-        await funnel_info.get()
-
-        await user_info.get()
         
         await updater.process()
 
