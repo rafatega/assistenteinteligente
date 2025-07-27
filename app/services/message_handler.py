@@ -85,6 +85,7 @@ async def process_message(body: dict) -> dict:
         await historico.salvar()
         
         if config_info.desativar_assistente(webhook_process.mensagem_consolidada):
+            logger.info(f"Parando assistente, humando em atendimento, palavra chave ativada.")
             await updater.change_state()
         
     else:
