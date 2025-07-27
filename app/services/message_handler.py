@@ -21,6 +21,12 @@ async def process_message(body: dict) -> dict:
     # Recebe a cria objeto com informações do webhook.
     webhook = WebhookMessage(**body)
 
+    if webhook.isGroup:
+        logger.info(f"[🔕 Ignorado - Grupo] Mensagem de grupo recebida de {webhook.phone}")
+        elapsed = time.monotonic() - start_time
+        logger.info(f"[⏱️ Tempo de execução total, BOT*{webhook.fromMe}*]: {elapsed:.3f} segundos")
+        return
+
     # Objeto com métodos e atributos do histórico de conversas.
     historico = HistoricoConversas(webhook.connectedPhone, webhook.phone)
     await historico.carregar()
@@ -43,7 +49,6 @@ async def process_message(body: dict) -> dict:
 
     # Só processa se a mensagem não for do próprio bot/assistente
     if not webhook.fromMe and not webhook.isGroup:
-        logger.info(f"webhook.isGroup: {webhook.isGroup}")
         # Responsável por atualizar os dados do cliente (UserInfo)
         await updater.process()
 
