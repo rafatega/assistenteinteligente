@@ -1,7 +1,10 @@
 import json
+import pytz
 from app.utils.logger import logger
 from dataclasses import dataclass
 from typing import Optional, Any
+from datetime import datetime
+
 from app.config.redis_client import redis_client
 from app.config.supabase_client import supabase
 
@@ -13,6 +16,7 @@ class ConfigInfo:
     pinecone_index_name: str
     tempo_espera_debounce: Optional[int] = 0
     chave_parar_atendimento: Optional[str] = None
+    horario_atendimento: Optional[dict] = None
 
     @classmethod
     def from_dict(cls, data: dict) -> "ConfigInfo":
@@ -22,7 +26,8 @@ class ConfigInfo:
             pinecone_namespace=data.get("pinecone_namespace", ""),
             pinecone_index_name=data.get("pinecone_index_name", ""),
             tempo_espera_debounce=data.get("tempo_espera_debounce", 0),
-            chave_parar_atendimento=data.get("chave_parar_atendimento", None)
+            chave_parar_atendimento=data.get("chave_parar_atendimento", None),
+            horario_atendimento=data.get("horario_atendimento", None)
         )
 
     def to_dict(self) -> dict:
@@ -32,7 +37,8 @@ class ConfigInfo:
             "pinecone_namespace": self.pinecone_namespace,
             "pinecone_index_name": self.pinecone_index_name,
             "tempo_espera_debounce": self.tempo_espera_debounce,
-            "chave_parar_atendimento": self.chave_parar_atendimento
+            "chave_parar_atendimento": self.chave_parar_atendimento,
+            "horario_atendimento": self.horario_atendimento
         }
     
     def desativar_assistente(self, mensagem: Optional[str]) -> bool:
@@ -41,6 +47,46 @@ class ConfigInfo:
             mensagem is not None and
             self.chave_parar_atendimento in mensagem
         )
+    
+    def time_window(self) -> bool:
+        if not self.horario_atendimento:
+            return True
+
+        tz = pytz.timezone("America/Sao_Paulo")
+        agora = datetime.now(tz)
+        hora_atual = agora.time()
+
+        dias_semana = {
+            0: "segunda",
+            1: "terca",
+            2: "quarta",
+            3: "quinta",
+            4: "sexta",
+            5: "sabado",
+            6: "domingo"
+        }
+
+        dia_semana = dias_semana[agora.weekday()]
+
+        horarios = self.horario_atendimento.get(dia_semana) or self.horario_atendimento.get("default")
+        if horarios == "24h":
+            return True
+
+        if not horarios or len(horarios) != 2:
+            return True
+
+        inicio = datetime.strptime(horarios[0], "%H:%M").time()
+        fim = datetime.strptime(horarios[1], "%H:%M").time()
+
+        logger.ingo(f"Objeto horario_atendimento: {self.horario_atendimento}")
+        logger.info(f"Hora agora: {hora_atual}, Dia: {dia_semana}, Inicio Atendimento: {inicio}, Fim: {fim}")
+
+        if inicio > fim:
+            # Exemplo: 22:00 até 08:00 (vira de um dia para o outro)
+            return hora_atual >= inicio or hora_atual <= fim
+        else:
+            # Exemplo: 08:00 até 20:00
+            return inicio <= hora_atual <= fim
 
 class ConfigService:                                                                                                                    #43200
     def __init__(self, telefone_cliente: str, redis_client: Any = redis_client, supabase_client: Any = supabase, cache_ttl: Optional[int] = 43200, config: Optional[ConfigInfo] = None):
