@@ -56,29 +56,31 @@ async def process_message(body: dict) -> dict:
         horario_atendimento_permitido = config_info.time_window()
         logger.info(f"Time Window - {webhook.connectedPhone}-{webhook.phone}: {horario_atendimento_permitido}")
         tipo_cliente = updater.user_info.state
-        if tipo_cliente != ('atendimento_humano') and horario_atendimento_permitido:
+
+        if horario_atendimento_permitido:
+            if tipo_cliente != ('atendimento_humano'):
             
-            chunks = BuscadorChunks(config_info.pinecone_index_name, config_info.pinecone_namespace)
-            await chunks.buscar(webhook_process.mensagem_consolidada)
+                chunks = BuscadorChunks(config_info.pinecone_index_name, config_info.pinecone_namespace)
+                await chunks.buscar(webhook_process.mensagem_consolidada)
 
-            chat_input = ChatInput(
-            mensagem=webhook_process.mensagem_consolidada,
-            best_chunks=chunks.best_chunks,
-            historico=historico.mensagens,
-            prompt_base=funnel_info.funnel.prompt_base,
-            prompt_state=updater.response_prompt,
-            user_data=updater.user_info
-        )
-            responder = ChatResponder(chat_input)
-            await responder.generate()
+                chat_input = ChatInput(
+                mensagem=webhook_process.mensagem_consolidada,
+                best_chunks=chunks.best_chunks,
+                historico=historico.mensagens,
+                prompt_base=funnel_info.funnel.prompt_base,
+                prompt_state=updater.response_prompt,
+                user_data=updater.user_info
+            )
+                responder = ChatResponder(chat_input)
+                await responder.generate()
 
-            prepara_envio = MensagemDispatcher(webhook.phone, responder.resposta, config_info.zapi_instance_id, config_info.zapi_token)
-            await prepara_envio.enviar_resposta()
+                prepara_envio = MensagemDispatcher(webhook.phone, responder.resposta, config_info.zapi_instance_id, config_info.zapi_token)
+                await prepara_envio.enviar_resposta()
 
-        elif tipo_cliente == ('atendimento_humano') and tipo_cliente != updater.original_snapshot.get("state", ""):
-            resposta = "Obrigado pela informação, avisei a Jaqueline, logo ela entrará em contato por este mesmo número."
-            prepara_envio = MensagemDispatcher(webhook.phone, resposta, config_info.zapi_instance_id, config_info.zapi_token)
-            await prepara_envio.enviar_resposta()
+            elif tipo_cliente == ('atendimento_humano') and tipo_cliente != updater.original_snapshot.get("state", ""):
+                resposta = "Obrigado pela informação, avisei a Jaqueline, logo ela entrará em contato por este mesmo número."
+                prepara_envio = MensagemDispatcher(webhook.phone, resposta, config_info.zapi_instance_id, config_info.zapi_token)
+                await prepara_envio.enviar_resposta()
 
         historico.adicionar_interacao("user", webhook_process.mensagem_consolidada)
         await historico.salvar()
