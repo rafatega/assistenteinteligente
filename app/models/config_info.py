@@ -78,7 +78,7 @@ class ConfigInfo:
         inicio = datetime.strptime(horarios[0], "%H:%M").time()
         fim = datetime.strptime(horarios[1], "%H:%M").time()
 
-        logger.ingo(f"Objeto horario_atendimento: {self.horario_atendimento}")
+        logger.info(f"Objeto horario_atendimento: {self.horario_atendimento}")
         logger.info(f"Hora agora: {hora_atual}, Dia: {dia_semana}, Inicio Atendimento: {inicio}, Fim: {fim}")
 
         if inicio > fim:
