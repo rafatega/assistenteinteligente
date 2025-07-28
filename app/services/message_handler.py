@@ -71,11 +71,11 @@ async def process_message(body: dict) -> dict:
 
             prepara_envio = MensagemDispatcher(webhook.phone, responder.resposta, config_info.zapi_instance_id, config_info.zapi_token)
             await prepara_envio.enviar_resposta()
-        else:
-            if tipo_cliente != updater.original_snapshot.get("state", ""):
-                resposta = "Obrigado pela informação, avisei a Jaqueline, logo ela entrará em contato por este mesmo número."
-                prepara_envio = MensagemDispatcher(webhook.phone, resposta, config_info.zapi_instance_id, config_info.zapi_token)
-                await prepara_envio.enviar_resposta()
+            
+        elif tipo_cliente == ('atendimento_humano') and tipo_cliente != updater.original_snapshot.get("state", ""):
+            resposta = "Obrigado pela informação, avisei a Jaqueline, logo ela entrará em contato por este mesmo número."
+            prepara_envio = MensagemDispatcher(webhook.phone, resposta, config_info.zapi_instance_id, config_info.zapi_token)
+            await prepara_envio.enviar_resposta()
 
         historico.adicionar_interacao("user", webhook_process.mensagem_consolidada)
         await historico.salvar()
