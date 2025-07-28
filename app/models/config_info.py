@@ -73,13 +73,14 @@ class ConfigInfo:
             return True
 
         if not horarios or len(horarios) != 2:
+            logger.info(f"Erro no horário do TimeWindow, IMPORTANTE REVER")
             return True
 
         inicio = datetime.strptime(horarios[0], "%H:%M").time()
         fim = datetime.strptime(horarios[1], "%H:%M").time()
 
-        logger.info(f"Objeto horario_atendimento: {self.horario_atendimento}")
-        logger.info(f"Hora agora: {hora_atual}, Dia: {dia_semana}, Inicio Atendimento: {inicio}, Fim: {fim}")
+        #logger.info(f"Objeto horario_atendimento: {self.horario_atendimento}")
+        #logger.info(f"Hora agora: {hora_atual}, Dia: {dia_semana}, Inicio Atendimento: {inicio}, Fim: {fim}")
 
         if inicio > fim:
             # Exemplo: 22:00 até 08:00 (vira de um dia para o outro)

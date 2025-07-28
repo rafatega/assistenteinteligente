@@ -24,7 +24,7 @@ async def process_message(body: dict) -> dict:
     if webhook.isGroup:
         logger.info(f"[🔕 Ignorado - Grupo] Mensagem de grupo recebida de {webhook.phone}")
         elapsed = time.monotonic() - start_time
-        logger.info(f"[⏱️ Tempo de execução total, BOT*{webhook.fromMe}*]: {elapsed:.3f} segundos")
+        logger.info(f"[⏱️ Tempo de execução total, BOT*{webhook.fromMe}* - {webhook.connectedPhone}]: {elapsed:.3f} segundos")
         return
 
     # Objeto com métodos e atributos do histórico de conversas.
@@ -52,8 +52,11 @@ async def process_message(body: dict) -> dict:
         # Responsável por atualizar os dados do cliente (UserInfo)
         await updater.process()
 
+        # Checa horário de atendimento.
+        horario_atendimento_permitido = config_info.time_window()
+        logger.info(f"Time Window - {webhook.connectedPhone}-{webhook.phone}: {horario_atendimento_permitido}")
         tipo_cliente = updater.user_info.state
-        if tipo_cliente != ('atendimento_humano') and config_info.time_window():
+        if tipo_cliente != ('atendimento_humano') and horario_atendimento_permitido:
             
             chunks = BuscadorChunks(config_info.pinecone_index_name, config_info.pinecone_namespace)
             await chunks.buscar(webhook_process.mensagem_consolidada)
@@ -71,7 +74,7 @@ async def process_message(body: dict) -> dict:
 
             prepara_envio = MensagemDispatcher(webhook.phone, responder.resposta, config_info.zapi_instance_id, config_info.zapi_token)
             await prepara_envio.enviar_resposta()
-            
+
         elif tipo_cliente == ('atendimento_humano') and tipo_cliente != updater.original_snapshot.get("state", ""):
             resposta = "Obrigado pela informação, avisei a Jaqueline, logo ela entrará em contato por este mesmo número."
             prepara_envio = MensagemDispatcher(webhook.phone, resposta, config_info.zapi_instance_id, config_info.zapi_token)

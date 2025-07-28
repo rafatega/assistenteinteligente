@@ -92,10 +92,10 @@ class UserInfoUpdater:                                                          
         if fallback_prompt:
             objeto_fallback = FallbackLLM(self.mensagem, fallback_prompt, self.historico)
             resposta_llm = await objeto_fallback.generate_fallback_llm()
-            logger.info(f"Perguntando para o Fallback LLM. Etapa: {etapa.id}")
+            #logger.info(f"Perguntando para o Fallback LLM. Etapa: {etapa.id}")
             if resposta_llm:
                 resposta = resposta_llm.strip().lower()
-                logger.info(f"Dado registrado pelo Fallback LLM. Etapa: {etapa.id}")
+                #logger.info(f"Dado registrado pelo Fallback LLM. Etapa: {etapa.id}")
                 return resposta
             return None
         return None
@@ -139,7 +139,7 @@ class UserInfoUpdater:                                                          
         if current != self.original_snapshot:
             key = f"user_info:{self.telefone_cliente}:{self.telefone_usuario}"
             await redis_client.set(key, json.dumps(current), ex=self.cache_ttl)
-            logger.info(f"[UserInfoUpdater] Redis atualizado para {self.telefone_usuario}")
+            #logger.info(f"[UserInfoUpdater] Redis atualizado para {self.telefone_usuario}")
 
             # Supabase
             try:
