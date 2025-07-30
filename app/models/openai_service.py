@@ -13,6 +13,7 @@ class ChatInput:
     prompt_base: str
     prompt_state: str
     user_data: Any
+    apresentacao_inicial: Optional[str] = None
 
 class ChatResponder:
     def __init__(
@@ -76,6 +77,12 @@ class ChatResponder:
             textwrap.dedent(self.input.prompt_base or "").strip(),
             "",
             "[ESTADO DO FUNIL]",
+            # descompacta este trecho só se houver apresentacao_inicial
+            *(
+                [textwrap.dedent(self.input.apresentacao_inicial).strip(), ""]
+                if self.input.apresentacao_inicial
+                else []
+            ),
             textwrap.dedent(self.input.prompt_state or "").strip(),
             "",
             "[HISTÓRICO DE CONVERSA]",

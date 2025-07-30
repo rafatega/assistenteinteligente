@@ -18,6 +18,7 @@ class HistoricoConversas:
         self.mensagens = mensagens
         self.cache_ttl_seconds = cache_ttl_seconds
         self.key = f"{self.FIELD}:{telefone_cliente}:{telefone_usuario}"
+        self.primeiro_contato: bool = False
 
     async def carregar(self):
         for tentativa in range(self.tentativas):
@@ -56,9 +57,10 @@ class HistoricoConversas:
             self.mensagens = [self._mensagem_inicial()]
     
     def _mensagem_inicial(self) -> dict:
+        self.primeiro_contato = True
         return {
             "role": "system",
-            "content": "O cliente não tem histórico de interações com a empresa."
+            "content": "O cliente não tem histórico de interações nos registros."
         }
 
     def adicionar_interacao(self, role: str, content: str):
