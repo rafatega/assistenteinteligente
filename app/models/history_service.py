@@ -10,7 +10,7 @@ class HistoricoConversas:
     TABLE = "user_data"
     FIELD = "history"
                                                                                                                                                                 #14400
-    def __init__(self, telefone_cliente: str, telefone_usuario: str, redis_client: Any = redis_client, tentativas: int = 3, mensagens: list = [], cache_ttl_seconds: int = 14400):
+    def __init__(self, telefone_cliente: str, telefone_usuario: str, redis_client: Any = redis_client, tentativas: int = 3, mensagens: list = [], cache_ttl_seconds: int = 180):
         self.telefone_cliente = telefone_cliente
         self.telefone_usuario = telefone_usuario
         self.redis = redis_client
