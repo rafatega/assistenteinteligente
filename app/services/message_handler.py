@@ -78,8 +78,12 @@ async def process_message(body: dict) -> dict:
                 await prepara_envio.enviar_resposta()
 
             elif tipo_cliente == ('atendimento_humano') and tipo_cliente != updater.original_snapshot.get("state", ""):
-                resposta_encerramento = FallbackLLM(webhook_process.mensagem_consolidada, funnel_info.funnel.prompt_encerramento, historico.mensagens)
-                prepara_envio = MensagemDispatcher(webhook.phone, resposta_encerramento, config_info.zapi_instance_id, config_info.zapi_token)
+                encerramento = FallbackLLM(webhook_process.mensagem_consolidada, funnel_info.funnel.prompt_encerramento, historico.mensagens)
+                resposta = await encerramento.generate_fallback_llm()
+                if resposta:
+                    prepara_envio = MensagemDispatcher(webhook.phone, resposta, config_info.zapi_instance_id, config_info.zapi_token)
+                else:
+                    prepara_envio = "Obrigada pela informação, seu atendimento será em breve."
                 await prepara_envio.enviar_resposta()
 
         historico.adicionar_interacao("user", webhook_process.mensagem_consolidada)
