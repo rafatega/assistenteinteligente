@@ -10,7 +10,7 @@ from app.models.send_message import MensagemDispatcher
 from app.models.config_info import ConfigService
 from app.models.funnel_service import FunnelService
 from app.models.user_info import UserInfoService
-from app.models.user_updater_service import UserInfoUpdater
+from app.models.user_updater_service import UserInfoUpdater, FallbackLLM
 from app.utils.logger import logger
 
 openai.api_key = API_KEY_OPENAI
@@ -78,8 +78,8 @@ async def process_message(body: dict) -> dict:
                 await prepara_envio.enviar_resposta()
 
             elif tipo_cliente == ('atendimento_humano') and tipo_cliente != updater.original_snapshot.get("state", ""):
-                resposta = "Obrigado pela informação, avisei a Jaqueline, logo ela entrará em contato por este mesmo número."
-                prepara_envio = MensagemDispatcher(webhook.phone, resposta, config_info.zapi_instance_id, config_info.zapi_token)
+                resposta_encerramento = FallbackLLM(webhook_process.mensagem_consolidada, funnel_info.funnel.prompt_encerramento, historico.mensagens)
+                prepara_envio = MensagemDispatcher(webhook.phone, resposta_encerramento, config_info.zapi_instance_id, config_info.zapi_token)
                 await prepara_envio.enviar_resposta()
 
         historico.adicionar_interacao("user", webhook_process.mensagem_consolidada)

@@ -99,21 +99,7 @@ class UserInfoUpdater:                                                          
                 return resposta
             return None
         return None
-
-        #estado_original = self.original_snapshot.get("state", "")
-        #if estado_original == etapa.id:
-        #    fallback_prompt = getattr(etapa, "fallback_llm", None)
-        #    if fallback_prompt:
-        #        resposta_llm = await self.chamar_llm(fallback_prompt, self.mensagem)
-        #        logger.info(f"resposta_llm: {resposta_llm}")
-        #        if resposta_llm:
-        #            resposta = resposta_llm.strip().lower()
-        #            logger.info("Dado registrado pelo Fallback LLM.")
-        #            return resposta
-        #        return None
                 
-        
-
     def _definir_prompt_para_etapa(self, etapa: Any, valor_atual: Any) -> None:
         if not self.first_prompt:
             #if etapa.obrigatorio or valor_atual is None or self.user_info.state != etapa.id:
