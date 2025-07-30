@@ -11,6 +11,7 @@ from app.models.config_info import ConfigService
 from app.models.funnel_service import FunnelService
 from app.models.user_info import UserInfoService
 from app.models.user_updater_service import UserInfoUpdater, FallbackLLM
+from app.models.developer_mode import DeveloperMode
 from app.utils.logger import logger
 
 openai.api_key = API_KEY_OPENAI
@@ -26,14 +27,25 @@ async def process_message(body: dict) -> dict:
         elapsed = time.monotonic() - start_time
         logger.info(f"[⏱️ Tempo de execução total, BOT*{webhook.fromMe}* - {webhook.connectedPhone}]: {elapsed:.3f} segundos")
         return
+    
+    # Objeto com métodos e atributos das configurações dos nossos cliente.
+    config_info = ConfigService(webhook.connectedPhone)
+    await config_info.get()
+    
+    # DEV MODE
+    if webhook.mensagem_texto in ("/adminresetuser", "/adminresetclient"):
+        devObject = DeveloperMode(webhook.connectedPhone, webhook.phone)
+        reset_info = devObject.developer_mode(webhook.mensagem_texto)
+        if reset_info:
+            prepara_envio = MensagemDispatcher(webhook.phone, reset_info, config_info.zapi_instance_id, config_info.zapi_token)
+        else:
+            fallback = "Não foi possível resetar"
+            prepara_envio = MensagemDispatcher(webhook.phone, fallback, config_info.zapi_instance_id, config_info.zapi_token)
+        await prepara_envio.enviar_resposta()
 
     # Objeto com métodos e atributos do histórico de conversas.
     historico = HistoricoConversas(webhook.connectedPhone, webhook.phone)
     await historico.carregar()
-
-    # Objeto com métodos e atributos das configurações dos nossos cliente.
-    config_info = ConfigService(webhook.connectedPhone)
-    await config_info.get()
 
     # Tratamento da mensagem (Audio e Debouncer)
     webhook_process = WebhookProcessor(webhook, config_info.tempo_espera_debounce)

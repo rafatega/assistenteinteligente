@@ -17,7 +17,7 @@ CHAT_MODEL = "gpt-4"
 FALLBACK_MODEL = "gpt-3.5-turbo"
 
 class UserInfoUpdater:                                                                                                                          #14400
-    def __init__(self, mensagem: str, user_info: UserInfo, funnel_info: FunnelInfo, telefone_cliente: str, telefone_usuario: str, historico: Any, cache_ttl: Optional[int] = 180):
+    def __init__(self, mensagem: str, user_info: UserInfo, funnel_info: FunnelInfo, telefone_cliente: str, telefone_usuario: str, historico: Any, cache_ttl: Optional[int] = 14400):
         self.mensagem = mensagem.lower()
         self.user_info = user_info
         self.funnel_info = funnel_info
