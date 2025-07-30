@@ -19,6 +19,7 @@ class RespostaSegmentada:
 
     def _segmentar(self) -> List[str]:
         texto = self.resposta_ia
+        logger.info(f"Texto que vai ser segmentado: {texto}")
         for abbr in self.ABBREVIATIONS:
             texto = re.sub(rf"\b{abbr}\.", f"{abbr}{self.PLACEHOLDER}", texto)
         texto = self.ENUM_PATTERN.sub(lambda m: f"{m.group('number')}{self.PLACEHOLDER}", texto)
