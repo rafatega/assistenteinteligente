@@ -164,7 +164,7 @@ class UserInfoUpdater:                                                          
             return self.first_prompt[1]
 
         etapa_final = next((e for e in self.funnel_info.funil if e.id == "esperando_humano"), None)
-        return etapa_final.prompt if etapa_final else "Muito obrigado! Em breve a Jaqueline irá te atender por aqui."
+        return etapa_final.prompt if etapa_final else "Muito obrigado! Em breve a responsável pelo atendimento irá te chamar por aqui."
     
     @staticmethod
     async def chamar_llm(prompt: str, mensagem: str) -> str:

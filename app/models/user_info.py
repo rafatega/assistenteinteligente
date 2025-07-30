@@ -26,8 +26,8 @@ class UserInfo:
 class UserInfoService:
     TABLE = "user_data"
     FIELD = "user_info"
-                                                                                                            #43200
-    def __init__(self, telefone_cliente: str, telefone_usuario: str, funnel_info, cache_ttl: Optional[int] = 43200, redis_client: Any = redis_client, supabase_client: Any = supabase):
+                                                                                                            #14400
+    def __init__(self, telefone_cliente: str, telefone_usuario: str, funnel_info, cache_ttl: Optional[int] = 14400, redis_client: Any = redis_client, supabase_client: Any = supabase):
         self.telefone_cliente = telefone_cliente
         self.telefone_usuario = telefone_usuario
         self.funnel_info = funnel_info
