@@ -10,10 +10,10 @@ class DeveloperMode:
         self.redis = redis_client
         self.key = f"{telefone_cliente}:{telefone_usuario}"
     
-    def clear_user_redis_record(self) -> int:
+    async def clear_user_redis_record(self) -> int:
         history_key   = f"history:{self.key}"
         user_info_key = f"user_info:{self.key}"
-        deleted_count = self.redis.delete(history_key, user_info_key)
+        deleted_count = await self.redis.delete(history_key, user_info_key)
         logger.info(f"✔️ Redis delete count={deleted_count} for {history_key}, {user_info_key}")
         return deleted_count
 
@@ -29,16 +29,16 @@ class DeveloperMode:
         logger.info(f"✔️ Supabase delete count={deleted_rows} for id={self.key}")
         return deleted_rows
 
-    def clear_client_redis_record(self) -> int:
+    async def clear_client_redis_record(self) -> int:
         config_key = f"config_info:{self.telefone_cliente}"
         funnel_key = f"funnel_info:{self.telefone_cliente}"
-        deleted_count = self.redis.delete(config_key, funnel_key)
+        deleted_count = await self.redis.delete(config_key, funnel_key)
         logger.info(f"✔️ Redis delete count={deleted_count} for {config_key}, {funnel_key}")
         return deleted_count
 
-    def developer_mode(self, cmd: str) -> str:
+    async def developer_mode(self, cmd: str) -> str:
         if cmd == "/adminresetuser":
-            r = self.clear_user_redis_record()
+            r = await self.clear_user_redis_record()
             s = self.clear_user_supabase_record()
             return (
                 f"✅ Usuário resetado:\n"
@@ -46,7 +46,7 @@ class DeveloperMode:
                 f"- Supabase: {s} registro(s) removido(s)"
             )
         elif cmd == "/adminresetclient":
-            r = self.clear_client_redis_record()
+            r = await self.clear_client_redis_record()
             return (
                 f"✅ Cliente resetado:\n"
                 f"- Redis: {r} chave(s) removida(s)"

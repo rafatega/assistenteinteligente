@@ -36,7 +36,7 @@ async def process_message(body: dict) -> dict:
     if webhook.mensagem_texto in ("/adminresetuser", "/adminresetclient"):
         dev = DeveloperMode(webhook.connectedPhone, webhook.phone)
         try:
-            reset_info = dev.developer_mode(webhook.mensagem_texto)
+            reset_info = await dev.developer_mode(webhook.mensagem_texto)
         except Exception as e:
             reset_info = f"❗️ Não foi possível resetar: {e}"
 
