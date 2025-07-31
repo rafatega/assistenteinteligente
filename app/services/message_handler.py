@@ -34,15 +34,15 @@ async def process_message(body: dict) -> dict:
     
     # DEV MODE
     if webhook.mensagem_texto in ("/adminresetuser", "/adminresetclient"):
-        devObject = DeveloperMode(webhook.connectedPhone, webhook.phone)
-        reset_info = devObject.developer_mode(webhook.mensagem_texto)
-        if reset_info:
-            prepara_envio = MensagemDispatcher(webhook.phone, reset_info, config_info.zapi_instance_id, config_info.zapi_token)
-        else:
-            fallback = "Não foi possível resetar"
-            prepara_envio = MensagemDispatcher(webhook.phone, fallback, config_info.zapi_instance_id, config_info.zapi_token)
+        dev = DeveloperMode(webhook.connectedPhone, webhook.phone)
+        try:
+            reset_info = dev.developer_mode(webhook.mensagem_texto)
+        except Exception as e:
+            reset_info = f"❗️ Não foi possível resetar: {e}"
+
+        prepara_envio = MensagemDispatcher(webhook.phone, reset_info, config_info.zapi_instance_id, config_info.zapi_token )
         await prepara_envio.enviar_resposta()
-        return
+    return
 
     # Objeto com métodos e atributos do histórico de conversas.
     historico = HistoricoConversas(webhook.connectedPhone, webhook.phone)
