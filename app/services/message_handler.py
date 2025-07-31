@@ -42,7 +42,7 @@ async def process_message(body: dict) -> dict:
 
         prepara_envio = MensagemDispatcher(webhook.phone, reset_info, config_info.zapi_instance_id, config_info.zapi_token )
         await prepara_envio.enviar_resposta()
-    return
+        return
 
     # Objeto com métodos e atributos do histórico de conversas.
     historico = HistoricoConversas(webhook.connectedPhone, webhook.phone)
