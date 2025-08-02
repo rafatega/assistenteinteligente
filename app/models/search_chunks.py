@@ -38,7 +38,7 @@ class BuscadorChunks:
     def formatar_chunks(self, matches) -> List[str]:
         output = []
         for m in sorted(matches, key=lambda x: x["score"], reverse=True):
-            md    = m["metadados"]
+            md    = m["metadata"]
             texto = md.get("texto", "")
             score = m["score"]
             bloco = [
