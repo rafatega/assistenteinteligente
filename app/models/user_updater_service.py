@@ -25,11 +25,8 @@ class UserInfoUpdater:                                                          
         self.telefone_usuario = telefone_usuario
         self.historico = historico
         self.cache_ttl = cache_ttl
-
         self.original_snapshot = copy.deepcopy(user_info.to_dict())
         self.first_prompt: Optional[Tuple[str, str]] = None
-
-        self.updated_user_info: Optional[UserInfo] = None
         self.response_prompt: Optional[str] = None
 
     async def process(self) -> None:
@@ -60,34 +57,6 @@ class UserInfoUpdater:                                                          
             self._definir_prompt_para_etapa(etapa, valor_atual)
 
     async def _extrair_valor(self, etapa: Any) -> Optional[str]:
-
-        # REGEX
-        #for pattern in etapa.regex or []:
-        #    match = re.search(pattern, self.mensagem)
-        #    if match:
-        #        grupos = match.groupdict()
-        #        logger.info("Dado registrado por Regex.")
-        #        return next(iter(grupos.values()), None)
-
-        # HEURÍSTICA
-        #for chave, regras in (etapa.aliases or {}).items():
-        #    if not isinstance(regras, dict):
-        #        continue
-
-        #    for frase in regras.get("frases") or []:
-        #        if frase.lower() in self.mensagem:
-        #            logger.info("Dado registrado pela Heurística.")
-        #            return chave
-
-        #    tokens = [t.lower() for t in self.mensagem.split()]
-        #    for palavra in regras.get("palavras") or []:
-        #        if palavra.lower() in tokens:
-        #            logger.info("Dado registrado pela Heurística.")
-        #            return chave
-        
-        # FALLBACK LLM
-        #estado_original = self.original_snapshot.get("state", "")
-        #if estado_original == etapa.id:
         fallback_prompt = getattr(etapa, "fallback_llm", None)
         if fallback_prompt:
             objeto_fallback = FallbackLLM(self.mensagem, fallback_prompt, self.historico)

@@ -74,7 +74,7 @@ async def process_message(body: dict) -> dict:
             if tipo_cliente != ('atendimento_humano'):
             
                 chunks = BuscadorChunks(config_info.pinecone_index_name, config_info.pinecone_namespace)
-                await chunks.buscar(webhook_process.mensagem_consolidada)
+                await chunks.buscar(webhook_process.mensagem_consolidada, historico.mensagens_usuario)
 
                 chat_input = ChatInput(
                 mensagem=webhook_process.mensagem_consolidada,

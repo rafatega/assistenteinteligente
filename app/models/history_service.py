@@ -1,6 +1,6 @@
 import json
 import asyncio
-from typing import Any
+from typing import Any, List
 from datetime import datetime
 from app.utils.logger import logger
 from app.config.redis_client import redis_client
@@ -20,6 +20,9 @@ class HistoricoConversas:
         self.key = f"{self.FIELD}:{telefone_cliente}:{telefone_usuario}"
         self.primeiro_contato: bool = False
 
+        self.mensagens_usuario: List[str] = []
+        self._atualizar_mensagens_usuario()
+
     async def carregar(self):
         for tentativa in range(self.tentativas):
             try:
@@ -28,13 +31,17 @@ class HistoricoConversas:
                     self.mensagens = json.loads(data)
                 else:
                     await self._carregar_de_supabase()
-                return
+                break
             except Exception as e:
                 logger.error(f"[{self.key}] Erro Redis GET ({tentativa+1}): {e}")
                 await asyncio.sleep(1)
+        else:
+            logger.critical(f"[{self.key}] Falha ao acessar Redis. Histórico mínimo carregado.")
+            self.mensagens = [self._mensagem_inicial()]
 
-        logger.critical(f"[{self.self.key}] Falha ao acessar Redis. Histórico mínimo carregado.")
-        self.mensagens = [self._mensagem_inicial()]
+        # atualiza sempre que recarrega
+        self._atualizar_mensagens_usuario()
+        
     
     async def _carregar_de_supabase(self):
         try:
@@ -55,6 +62,9 @@ class HistoricoConversas:
         except Exception as e:
             logger.error(f"[{self.key}] Erro ao consultar Supabase: {e}")
             self.mensagens = [self._mensagem_inicial()]
+        
+        # Atualiza Mensagens do Usuário para uso no RAG.
+        self._atualizar_mensagens_usuario()
     
     def _mensagem_inicial(self) -> dict:
         self.primeiro_contato = True
@@ -100,4 +110,15 @@ class HistoricoConversas:
             ).execute()
         except Exception as e:
             logger.error(f"[{self.key}] Erro ao salvar histórico no Supabase: {e}")
+
+    def _atualizar_mensagens_usuario(self):
+        """
+        Filtra self.mensagens, mantendo só o conteúdo onde role == 'user'.
+        Atualiza self.mensagens_usuario.
+        """
+        self.mensagens_usuario = [
+            msg["content"] 
+            for msg in self.mensagens 
+            if msg.get("role") == "user"
+        ]
 
