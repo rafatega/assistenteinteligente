@@ -46,7 +46,6 @@ class BuscadorChunks:
                 f"**Score de contexto**: {score:.2f}"
             ]
 
-            # <<< o bloco.append abaixo deve ficar *dentro* do for k,v
             for k, v in md.items():
                 if k == "texto":
                     continue
@@ -70,7 +69,8 @@ class BuscadorChunks:
             # salva e retorna a string única
             self.best_chunks = [default_msg]
             return self.best_chunks
-            
+        
+        logger.info(f"Match CRU: {matches}")
         self.best_chunks = self.formatar_chunks(matches)
-        logger.info(f"BestChunks: {self.best_chunks}")
+        #logger.info(f"BestChunks: {self.best_chunks}")
         return self.best_chunks
