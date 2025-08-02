@@ -38,13 +38,20 @@ class BuscadorChunks:
     def formatar_chunks(self, matches) -> List[str]:
         output = []
         for m in sorted(matches, key=lambda x: x["score"], reverse=True):
-            md = m["metadata"]
-            texto = md.get("texto", "")
-            bloco = [f"> {texto}", f"**Score**: {m['score']:.2f}"]
+            md     = m["metadata"]
+            texto  = md.get("texto", "")
+            score  = m["score"]
+            bloco  = [f"> {texto}", f"**Score de contexto**: {score:.2f}"]
+
+            # agora, para cada metadado (secao, exame, tipo, aliases, valor, etc.)
             for k, v in md.items():
-                if k == "texto": continue
-                if isinstance(v, list): v = ", ".join(v)
-                bloco.append(f"- **{k.replace('_',' ').capitalize()}**: {v}")
+                if k == "texto":
+                    continue
+            # se for lista, junta em string
+                if isinstance(v, list):
+                    v = ", ".join(v)
+                bloco.append(f"{k}: {v}")
+
             output.append("\n".join(bloco))
         return output
 
