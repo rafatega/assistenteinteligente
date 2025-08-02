@@ -1,63 +1,64 @@
 import openai, pinecone
-from typing import List, Any
+from typing import List
+from tenacity import retry, stop_after_attempt, wait_exponential
+
 from app.utils.logger import logger
 from app.config.config import API_KEY_PINECONE
 
 pinecone_client = pinecone.Pinecone(api_key=API_KEY_PINECONE)
 
 class BuscadorChunks:
-    def __init__(self, pinecone_index: Any, namespace: Any, pinecone_client: Any = pinecone_client, modelo: str = "text-embedding-ada-002", top_k: int = 3, tentativas: int = 3):
-        self.pinecone_index = pinecone_index
+    def __init__(self, index, namespace, pinecone_client: pinecone.Pinecone = pinecone_client, model="text-embedding-ada-002", top_k=3, min_score: float = 0.8):
+        self.client = pinecone_client
+        self.index = self.client.Index(index)
         self.namespace = namespace
-        self.modelo = modelo
-        self.pinecone_client = pinecone_client
-        self.pinecone = self.pinecone_client.Index(self.pinecone_index)
+        self.model = model
         self.top_k = top_k
-        self.tentativas = tentativas
+        self.min_score = min_score
         self.best_chunks: List[str] = []
 
-    def formatar_chunks(self, matches: List[dict]) -> List[str]:
-        formatted = []
-        for match in matches:
-            md = match.get("metadata", {})
-            # identificar um campo que represente o tipo ou título
-            title = md.get("secao", "Info clínica").capitalize()
-            lines = [f"**{title}**"]
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=5))
+    def _embed(self, query: str):
+        return openai.Embedding.create(
+            input=query,
+            model=self.model,
+            timeout=10
+        )["data"][0]["embedding"]
+
+    def _query(self, embedding):
+        resp = self.index.query(
+            vector=embedding,
+            top_k=self.top_k,
+            include_metadata=True,
+            namespace=self.namespace
+        )
+        return resp.get("matches", [])
+
+    def formatar_chunks(self, matches) -> List[str]:
+        output = []
+        for m in sorted(matches, key=lambda x: x["score"], reverse=True):
+            md = m["metadata"]
+            texto = md.get("texto", "")
+            bloco = [f"> {texto}", f"**Score**: {m['score']:.2f}"]
             for k, v in md.items():
-                if k == "secao":
-                    continue
-                # trata listas
-                if isinstance(v, list):
-                    v = ", ".join(v)
-                lines.append(f"- {k.replace('_', ' ').capitalize()}: {v}")
-            formatted.append("\n".join(lines))
-        return formatted
-    
-    async def buscar(self, query: str) -> List[str]:
-        for tentativa in range(self.tentativas):
-            try:
-                embedding = openai.Embedding.create(
-                    input=query,
-                    model=self.modelo
-                )["data"][0]["embedding"]
+                if k == "texto": continue
+                if isinstance(v, list): v = ", ".join(v)
+                bloco.append(f"- **{k.replace('_',' ').capitalize()}**: {v}")
+            output.append("\n".join(bloco))
+        return output
 
-                results = self.pinecone.query(
-                    vector=embedding,
-                    top_k=self.top_k,
-                    include_metadata=True,
-                    namespace=self.namespace
-                )
-
-                matches = results.get("matches", [])
-                if not matches:
-                    logger.warning("[BuscadorChunks] Nenhum match retornado pelo Pinecone.")
-
-                self.best_chunks = self.formatar_chunks(matches)
-                return self.best_chunks
-
-            except Exception as e:
-                logger.error(f"[BuscadorChunks] Tentativa {tentativa + 1}: {e}")
-
-        logger.critical("[BuscadorChunks] Falha ao buscar chunks após múltiplas tentativas.")
-        self.best_chunks = []
-        return []
+    def buscar(self, query: str) -> List[str]:
+        emb = self._embed(query)
+        matches = self._query(emb)
+        # aplica threshold
+        matches = [m for m in matches if m["score"] >= self.min_score]
+        if not matches:
+            default_msg = ("Sem contexto de acordo com a mensagem e histórico do cliente, se necessário, peça para reformular ou especificar melhor sua dúvida.")
+            logger.warning("Sem chunks acima do limiar")
+            # salva e retorna a string única
+            self.best_chunks = [default_msg]
+            return self.best_chunks
+            
+        self.best_chunks = self.formatar_chunks(matches)
+        logger.info(f"BestChunks: {self.best_chunks}")
+        return self.best_chunks
