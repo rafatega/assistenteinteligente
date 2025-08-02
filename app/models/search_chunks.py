@@ -1,4 +1,5 @@
 import openai, pinecone
+import asyncio
 from typing import List
 from tenacity import retry, stop_after_attempt, wait_exponential
 
@@ -47,9 +48,9 @@ class BuscadorChunks:
             output.append("\n".join(bloco))
         return output
 
-    def buscar(self, query: str) -> List[str]:
-        emb = self._embed(query)
-        matches = self._query(emb)
+    async def buscar(self, query: str) -> List[str]:
+        emb = await asyncio.to_thread(self._embed, query)
+        matches = await asyncio.to_thread(self._query, emb)
         # aplica threshold
         matches = [m for m in matches if m["score"] >= self.min_score]
         if not matches:
