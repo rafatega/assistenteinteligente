@@ -42,14 +42,14 @@ class DeveloperMode:
             s = self.clear_user_supabase_record()
             return (
                 f"✅ Usuário resetado:\n"
-                f"- Redis: {r} chave(s) removida(s)\n"
-                f"- Supabase: {s} registro(s) removido(s)"
+                f"- BD Cache: {r} chave(s) removida(s)\n"
+                f"- BD Relacional: {s} registro(s) removido(s)"
             )
         elif cmd == "/adminresetclient":
             r = await self.clear_client_redis_record()
             return (
                 f"✅ Cliente resetado:\n"
-                f"- Redis: {r} chave(s) removida(s)"
+                f"- BD Cache: {r} chave(s) removida(s)"
             )
         else:
             raise ValueError(f"Comando desconhecido: {cmd}")
