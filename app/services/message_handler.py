@@ -22,8 +22,8 @@ async def process_message(body: dict) -> dict:
     # Recebe a cria objeto com informações do webhook.
     webhook = WebhookMessage(**body)
 
-    if webhook.isGroup:
-        logger.info(f"[🔕 Ignorado - Grupo] Mensagem de grupo recebida de {webhook.phone}")
+    if webhook.isGroup or webhook.isEdit:
+        logger.info(f"[🔕 Ignorado] Mensagem recebida de {webhook.phone}")
         elapsed = time.monotonic() - start_time
         logger.info(f"[⏱️ Tempo de execução total, BOT*{webhook.fromMe}* - {webhook.connectedPhone}]: {elapsed:.3f} segundos")
         return

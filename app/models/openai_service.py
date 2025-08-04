@@ -143,8 +143,8 @@ class FallbackLLM:
     async def generate_fallback_llm(self) -> str:
         system_msg = self.build_system_content_fallback_llm()
         messages = self.build_messages(system_msg)
-        logger.info("=== CONTEXTO FALLBACK LLM ENVIADO AO GPT ===")
-        logger.info(system_msg.replace("\n", "\\n"))
+        #logger.info("=== CONTEXTO FALLBACK LLM ENVIADO AO GPT ===")
+        #logger.info(system_msg.replace("\n", "\\n"))
 
         for i in range(self.tentativas):
             model = self.modelo if i < self.tentativas - 1 else self.modelo_fallback
