@@ -82,7 +82,7 @@ class BuscadorChunks:
         matches = [m for m in matches if m["score"] >= self.min_score]
 
         if not matches:
-            default_msg = ("Sem contexto de acordo com a mensagem e histórico do cliente, se necessário, peça para reformular ou especificar melhor sua dúvida.")
+            default_msg = ("Sem informação.")
             logger.warning("Sem chunks acima do limiar")
             # salva e retorna a string única
             self.best_chunks = [default_msg]
