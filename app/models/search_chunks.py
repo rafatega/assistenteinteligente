@@ -90,5 +90,5 @@ class BuscadorChunks:
         
         #logger.info(f"Match CRU: {matches}")
         self.best_chunks = self.formatar_chunks(matches)
-        #logger.info(f"BestChunks: {self.best_chunks}")
+        logger.info(f"BestChunks: {self.best_chunks}")
         return self.best_chunks
