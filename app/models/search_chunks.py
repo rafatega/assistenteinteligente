@@ -9,7 +9,7 @@ from app.config.config import API_KEY_PINECONE
 pinecone_client = pinecone.Pinecone(api_key=API_KEY_PINECONE)
 
 class BuscadorChunks:
-    def __init__(self, index, namespace, pinecone_client: pinecone.Pinecone = pinecone_client, model="text-embedding-ada-002", top_k=4, min_score: float = 0.75, history_window: int = 4):
+    def __init__(self, index, namespace, pinecone_client: pinecone.Pinecone = pinecone_client, model="text-embedding-ada-002", top_k=3, min_score: float = 0.75, history_window: int = 4):
         self.client = pinecone_client
         self.index = self.client.Index(index)
         self.namespace = namespace
