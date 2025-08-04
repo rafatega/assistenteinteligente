@@ -24,7 +24,7 @@ class ChatResponder:
         tentativas: int = 3,
         temperature: float = 0.4,
         top_p: float = 0.9,
-        max_tokens: int = 200
+        max_tokens: int = 230
     ):
         self.input = chat_input
         self.modelo = modelo
