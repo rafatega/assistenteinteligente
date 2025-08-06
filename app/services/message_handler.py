@@ -61,7 +61,7 @@ async def process_message(body: dict) -> dict:
     updater = UserInfoUpdater(mensagem=webhook_process.mensagem_consolidada, user_info=user_info.user_info, funnel_info=funnel_info.funnel, telefone_cliente=webhook.connectedPhone, telefone_usuario=webhook.phone, historico=historico.mensagens)
 
     # Só processa se a mensagem não for do próprio bot/assistente
-    if not webhook.fromMe:
+    if not webhook.fromMe and webhook_process.mensagem_consolidada != "":
         # Responsável por atualizar os dados do cliente (UserInfo)
         await updater.process()
 
