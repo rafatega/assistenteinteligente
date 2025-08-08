@@ -132,7 +132,7 @@ class UserInfoUpdater:                                                          
                         {"role": "user", "content": mensagem}
                     ],
                     temperature=0,
-                    max_tokens=10,
+                    max_completion_tokens=10,
                 )
                 return response.choices[0].message['content'].strip()
             except Exception as e:
