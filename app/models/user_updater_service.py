@@ -13,7 +13,7 @@ from app.models.openai_service import FallbackLLM
 
 
 RETRY_ATTEMPTS = 2
-CHAT_MODEL = "gpt-5-mini"
+CHAT_MODEL = "gpt-4"
 FALLBACK_MODEL = "gpt-3.5-turbo"
 
 class UserInfoUpdater:                                                                                                                          #14400
@@ -132,7 +132,7 @@ class UserInfoUpdater:                                                          
                         {"role": "user", "content": mensagem}
                     ],
                     temperature=0,
-                    max_completion_tokens=10,
+                    max_tokens=10,
                 )
                 return response.choices[0].message['content'].strip()
             except Exception as e:

@@ -19,12 +19,12 @@ class ChatResponder:
     def __init__(
         self,
         chat_input: ChatInput,
-        modelo="gpt-5-mini",
+        modelo="gpt-4o-mini",
         modelo_fallback="gpt-3.5-turbo",
         tentativas: int = 3,
         temperature: float = 0.4,
         top_p: float = 0.9,
-        max_completion_tokens: int = 230
+        max_tokens: int = 230
     ):
         self.input = chat_input
         self.modelo = modelo
@@ -32,7 +32,7 @@ class ChatResponder:
         self.tentativas = tentativas
         self.temperature = temperature
         self.top_p = top_p
-        self.max_completion_tokens = max_completion_tokens
+        self.max_tokens = max_tokens
         self.resposta: str = ""
 
     def formatar_historico(self) -> str:
@@ -115,7 +115,7 @@ class ChatResponder:
                     messages=messages,
                     temperature=self.temperature,
                     top_p=self.top_p,
-                    max_completion_tokens=self.max_completion_tokens
+                    max_tokens=self.max_tokens
                 )
                 self.resposta = response.choices[0].message.content.strip()
                 return self.resposta
@@ -128,7 +128,7 @@ class ChatResponder:
 
 # Classe responsável por fazer o envio pro chat gpt;
 class FallbackLLM:
-    def __init__(self,  mensagem: str = "", prompt_fallback_llm: str = "", historico: str = "", modelo="gpt-4o-mini", modelo_fallback="gpt-3.5-turbo", tentativas: int = 3, temperature: float = 0, top_p: float = 0.9, max_completion_tokens: int = 10):
+    def __init__(self,  mensagem: str = "", prompt_fallback_llm: str = "", historico: str = "", modelo="gpt-4o-mini", modelo_fallback="gpt-3.5-turbo", tentativas: int = 3, temperature: float = 0, top_p: float = 0.9, max_tokens: int = 10):
         self.mensagem = mensagem
         self.prompt_fallback_llm = prompt_fallback_llm
         self.historico = historico
@@ -137,7 +137,7 @@ class FallbackLLM:
         self.tentativas = tentativas
         self.temperature = temperature
         self.top_p = top_p
-        self.max_completion_tokens = max_completion_tokens
+        self.max_tokens = max_tokens
         self.resposta: Any = None
 
     async def generate_fallback_llm(self) -> str:
@@ -154,7 +154,7 @@ class FallbackLLM:
                     messages=messages,
                     temperature=self.temperature,
                     top_p=self.top_p,
-                    max_completion_tokens=self.max_completion_tokens
+                    max_tokens=self.max_tokens
                 )
                 resposta_llm = response.choices[0].message.content.strip()
                 if resposta_llm not in {"nao_identificado", "não_identificado"}:
