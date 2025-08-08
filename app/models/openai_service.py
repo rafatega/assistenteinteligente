@@ -19,7 +19,7 @@ class ChatResponder:
     def __init__(
         self,
         chat_input: ChatInput,
-        modelo="gpt-4o-mini",
+        modelo="gpt-5-mini",
         modelo_fallback="gpt-3.5-turbo",
         tentativas: int = 3,
         temperature: float = 0.4,

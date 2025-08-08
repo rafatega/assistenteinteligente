@@ -13,7 +13,7 @@ from app.models.openai_service import FallbackLLM
 
 
 RETRY_ATTEMPTS = 2
-CHAT_MODEL = "gpt-4"
+CHAT_MODEL = "gpt-5-mini"
 FALLBACK_MODEL = "gpt-3.5-turbo"
 
 class UserInfoUpdater:                                                                                                                          #14400
