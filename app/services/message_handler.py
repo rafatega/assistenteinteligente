@@ -97,12 +97,19 @@ async def process_message(body: dict) -> dict:
                 responder = ChatResponder(chat_input)
                 await responder.generate()
 
-            prepara_envio = MensagemDispatcher(webhook.phone, responder.resposta, config_info.zapi_instance_id, config_info.zapi_token)
-            await prepara_envio.enviar_resposta()
-        else:
-            if tipo_cliente != updater.original_snapshot.get("state", ""):
-                resposta = "Obrigado pela informação, logo a assistente humana entrará em contato por este mesmo número.""
-                prepara_envio = MensagemDispatcher(webhook.phone, resposta, config_info.zapi_instance_id, config_info.zapi_token)
+                prepara_envio = MensagemDispatcher(
+                    webhook.phone, responder.resposta, config_info.zapi_instance_id, config_info.zapi_token)
+                await prepara_envio.enviar_resposta()
+
+            elif tipo_cliente == ('atendimento_humano') and tipo_cliente != updater.original_snapshot.get("state", ""):
+                encerramento = FallbackLLM(webhook_process.mensagem_consolidada, funnel_info.funnel.prompt_encerramento,
+                                           historico.mensagens, temperature=0.4, top_p=0.9, max_tokens=70)
+                resposta = await encerramento.generate_fallback_llm()
+                if resposta:
+                    prepara_envio = MensagemDispatcher(
+                        webhook.phone, resposta, config_info.zapi_instance_id, config_info.zapi_token)
+                else:
+                    prepara_envio = "Obrigada pela informação, seu atendimento será em breve."
                 await prepara_envio.enviar_resposta()
 
         historico.adicionar_interacao(
