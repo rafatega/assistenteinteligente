@@ -25,11 +25,8 @@ class UserInfoUpdater:                                                          
         self.telefone_usuario = telefone_usuario
         self.historico = historico
         self.cache_ttl = cache_ttl
-
         self.original_snapshot = copy.deepcopy(user_info.to_dict())
         self.first_prompt: Optional[Tuple[str, str]] = None
-
-        self.updated_user_info: Optional[UserInfo] = None
         self.response_prompt: Optional[str] = None
 
     async def process(self) -> None:
@@ -60,60 +57,18 @@ class UserInfoUpdater:                                                          
             self._definir_prompt_para_etapa(etapa, valor_atual)
 
     async def _extrair_valor(self, etapa: Any) -> Optional[str]:
-
-        # REGEX
-        #for pattern in etapa.regex or []:
-        #    match = re.search(pattern, self.mensagem)
-        #    if match:
-        #        grupos = match.groupdict()
-        #        logger.info("Dado registrado por Regex.")
-        #        return next(iter(grupos.values()), None)
-
-        # HEURÍSTICA
-        #for chave, regras in (etapa.aliases or {}).items():
-        #    if not isinstance(regras, dict):
-        #        continue
-
-        #    for frase in regras.get("frases") or []:
-        #        if frase.lower() in self.mensagem:
-        #            logger.info("Dado registrado pela Heurística.")
-        #            return chave
-
-        #    tokens = [t.lower() for t in self.mensagem.split()]
-        #    for palavra in regras.get("palavras") or []:
-        #        if palavra.lower() in tokens:
-        #            logger.info("Dado registrado pela Heurística.")
-        #            return chave
-        
-        # FALLBACK LLM
-        #estado_original = self.original_snapshot.get("state", "")
-        #if estado_original == etapa.id:
         fallback_prompt = getattr(etapa, "fallback_llm", None)
         if fallback_prompt:
             objeto_fallback = FallbackLLM(self.mensagem, fallback_prompt, self.historico)
             resposta_llm = await objeto_fallback.generate_fallback_llm()
-            logger.info(f"Perguntando para o Fallback LLM. Etapa: {etapa.id}")
+            #logger.info(f"Perguntando para o Fallback LLM. Etapa: {etapa.id}")
             if resposta_llm:
                 resposta = resposta_llm.strip().lower()
-                logger.info(f"Dado registrado pelo Fallback LLM. Etapa: {etapa.id}")
+                #logger.info(f"Dado registrado pelo Fallback LLM. Etapa: {etapa.id}")
                 return resposta
             return None
         return None
-
-        #estado_original = self.original_snapshot.get("state", "")
-        #if estado_original == etapa.id:
-        #    fallback_prompt = getattr(etapa, "fallback_llm", None)
-        #    if fallback_prompt:
-        #        resposta_llm = await self.chamar_llm(fallback_prompt, self.mensagem)
-        #        logger.info(f"resposta_llm: {resposta_llm}")
-        #        if resposta_llm:
-        #            resposta = resposta_llm.strip().lower()
-        #            logger.info("Dado registrado pelo Fallback LLM.")
-        #            return resposta
-        #        return None
                 
-        
-
     def _definir_prompt_para_etapa(self, etapa: Any, valor_atual: Any) -> None:
         if not self.first_prompt:
             #if etapa.obrigatorio or valor_atual is None or self.user_info.state != etapa.id:
@@ -139,7 +94,7 @@ class UserInfoUpdater:                                                          
         if current != self.original_snapshot:
             key = f"user_info:{self.telefone_cliente}:{self.telefone_usuario}"
             await redis_client.set(key, json.dumps(current), ex=self.cache_ttl)
-            logger.info(f"[UserInfoUpdater] Redis atualizado para {self.telefone_usuario}")
+            #logger.info(f"[UserInfoUpdater] Redis atualizado para {self.telefone_usuario}")
 
             # Supabase
             try:
@@ -164,7 +119,7 @@ class UserInfoUpdater:                                                          
             return self.first_prompt[1]
 
         etapa_final = next((e for e in self.funnel_info.funil if e.id == "esperando_humano"), None)
-        return etapa_final.prompt if etapa_final else "Muito obrigado! Em breve a Jaqueline irá te atender por aqui."
+        return etapa_final.prompt if etapa_final else "Muito obrigado! Em breve a responsável pelo atendimento irá te chamar por aqui."
     
     @staticmethod
     async def chamar_llm(prompt: str, mensagem: str) -> str:

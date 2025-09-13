@@ -13,3 +13,5 @@ python-dotenv
 supabase
 unidecode
 pydantic-settings
+pytz
+tenacity

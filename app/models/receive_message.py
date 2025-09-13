@@ -9,6 +9,7 @@ from app.utils.logger import logger
 class WebhookMessage(BaseModel):
     connectedPhone: str
     isGroup: bool
+    isEdit: bool
     phone: str
     fromMe: bool
     momment: int

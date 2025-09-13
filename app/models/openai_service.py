@@ -13,6 +13,7 @@ class ChatInput:
     prompt_base: str
     prompt_state: str
     user_data: Any
+    apresentacao_inicial: Optional[str] = None
 
 class ChatResponder:
     def __init__(
@@ -23,7 +24,7 @@ class ChatResponder:
         tentativas: int = 3,
         temperature: float = 0.4,
         top_p: float = 0.9,
-        max_tokens: int = 200
+        max_tokens: int = 230
     ):
         self.input = chat_input
         self.modelo = modelo
@@ -76,6 +77,12 @@ class ChatResponder:
             textwrap.dedent(self.input.prompt_base or "").strip(),
             "",
             "[ESTADO DO FUNIL]",
+            # descompacta este trecho só se houver apresentacao_inicial
+            *(
+                [textwrap.dedent(self.input.apresentacao_inicial).strip(), ""]
+                if self.input.apresentacao_inicial
+                else []
+            ),
             textwrap.dedent(self.input.prompt_state or "").strip(),
             "",
             "[HISTÓRICO DE CONVERSA]",
@@ -136,8 +143,8 @@ class FallbackLLM:
     async def generate_fallback_llm(self) -> str:
         system_msg = self.build_system_content_fallback_llm()
         messages = self.build_messages(system_msg)
-        logger.info("=== CONTEXTO FALLBACK LLM ENVIADO AO GPT ===")
-        logger.info(system_msg.replace("\n", "\\n"))
+        #logger.info("=== CONTEXTO FALLBACK LLM ENVIADO AO GPT ===")
+        #logger.info(system_msg.replace("\n", "\\n"))
 
         for i in range(self.tentativas):
             model = self.modelo if i < self.tentativas - 1 else self.modelo_fallback

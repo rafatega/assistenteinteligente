@@ -4,12 +4,13 @@ from app.utils.logger import logger
 
 router = APIRouter()
 
+
 @router.post("/webhook")
 async def receive_message(request: Request):
     body = await request.json()
-    logger.info(f"[📬 WEBHOOK RAIZ] {body}")
+    # logger.info(f"[📬 WEBHOOK RAIZ] {body}")
     return await process_message(body)
-    
+
 
 @router.get("/ping")
 def ping():

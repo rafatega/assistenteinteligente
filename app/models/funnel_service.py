@@ -6,7 +6,6 @@ from app.config.redis_client import redis_client
 from app.config.supabase_client import supabase
 from app.utils.logger import logger
 
-
 @dataclass
 class EtapaFunil:
     id: str
@@ -14,14 +13,13 @@ class EtapaFunil:
     obrigatorio: bool
     permite_nova_entrada: bool = False
     fallback_llm: Optional[Any] = None
-    aliases: Optional[Dict[str, Any]] = None
-    regex: Optional[List[str]] = None
 
 @dataclass
 class FunnelInfo:
     prompt_base: str
     funil: List[EtapaFunil]
     prompt_apresentacao_inicial: str
+    prompt_encerramento: str
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> "FunnelInfo":
@@ -30,7 +28,8 @@ class FunnelInfo:
         return FunnelInfo(
             prompt_base=data.get("prompt_base", ""),
             funil=funil,
-            prompt_apresentacao_inicial=data.get("prompt_apresentacao_inicial", "")
+            prompt_apresentacao_inicial=data.get("prompt_apresentacao_inicial", ""),
+            prompt_encerramento=data.get("prompt_encerramento", "")
         )
     
     def to_tracking_dict(self, preenchidos: Dict[str, Any] = None, estado_atual: Optional[str] = None) -> Dict[str, Any]:
