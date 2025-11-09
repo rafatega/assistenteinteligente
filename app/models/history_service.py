@@ -6,10 +6,12 @@ from app.utils.logger import logger
 from app.config.redis_client import redis_client
 from app.config.supabase_client import supabase
 
+
 class HistoricoConversas:
     TABLE = "user_data"
     FIELD = "history"
-                                                                                                                                                                #14400
+    # 14400
+
     def __init__(self, telefone_cliente: str, telefone_usuario: str, redis_client: Any = redis_client, tentativas: int = 3, mensagens: list = [], cache_ttl_seconds: int = 14400):
         self.telefone_cliente = telefone_cliente
         self.telefone_usuario = telefone_usuario
@@ -33,16 +35,17 @@ class HistoricoConversas:
                     await self._carregar_de_supabase()
                 break
             except Exception as e:
-                logger.error(f"[{self.key}] Erro Redis GET ({tentativa+1}): {e}")
+                logger.error(
+                    f"[{self.key}] Erro Redis GET ({tentativa+1}): {e}")
                 await asyncio.sleep(1)
         else:
-            logger.critical(f"[{self.key}] Falha ao acessar Redis. Histórico mínimo carregado.")
+            logger.critical(
+                f"[{self.key}] Falha ao acessar Redis. Histórico mínimo carregado.")
             self.mensagens = [self._mensagem_inicial()]
 
         # atualiza sempre que recarrega
         self._atualizar_mensagens_usuario()
-        
-    
+
     async def _carregar_de_supabase(self):
         try:
             id_cliente_usuario = f"{self.telefone_cliente}:{self.telefone_usuario}"
@@ -57,15 +60,16 @@ class HistoricoConversas:
                 logger.info(f"[{self.key}] Histórico carregado via Supabase.")
                 await self.redis.set(self.key, json.dumps(self.mensagens), ex=self.cache_ttl_seconds)
             else:
-                logger.info(f"[{self.key}] Nenhum histórico encontrado no Supabase.")
+                logger.info(
+                    f"[{self.key}] Nenhum histórico encontrado no Supabase.")
                 self.mensagens = [self._mensagem_inicial()]
         except Exception as e:
             logger.error(f"[{self.key}] Erro ao consultar Supabase: {e}")
             self.mensagens = [self._mensagem_inicial()]
-        
+
         # Atualiza Mensagens do Usuário para uso no RAG.
         self._atualizar_mensagens_usuario()
-    
+
     def _mensagem_inicial(self) -> dict:
         self.primeiro_contato = True
         return {
@@ -88,10 +92,12 @@ class HistoricoConversas:
                 await self.redis.set(self.key, json.dumps(mensagens_finais), ex=self.cache_ttl_seconds)
                 break
             except Exception as e:
-                logger.error(f"[{self.key}] Erro Redis SET ({tentativa+1}): {e}")
+                logger.error(
+                    f"[{self.key}] Erro Redis SET ({tentativa+1}): {e}")
                 await asyncio.sleep(1)
         else:
-            logger.critical(f"[{self.key}] Falha ao salvar histórico no Redis.")
+            logger.critical(
+                f"[{self.key}] Falha ao salvar histórico no Redis.")
 
         # Salva também no Supabase
         try:
@@ -105,11 +111,12 @@ class HistoricoConversas:
                 "telefone_usuario": self.telefone_usuario,
                 "history": mensagens_finais,
                 "updated_at": updated_at
-            }, 
-            on_conflict=["id_cliente_usuario"]
+            },
+                on_conflict=["id_cliente_usuario"]
             ).execute()
         except Exception as e:
-            logger.error(f"[{self.key}] Erro ao salvar histórico no Supabase: {e}")
+            logger.error(
+                f"[{self.key}] Erro ao salvar histórico no Supabase: {e}")
 
     def _atualizar_mensagens_usuario(self):
         """
@@ -117,8 +124,7 @@ class HistoricoConversas:
         Atualiza self.mensagens_usuario.
         """
         self.mensagens_usuario = [
-            msg["content"] 
-            for msg in self.mensagens 
+            msg["content"]
+            for msg in self.mensagens
             if msg.get("role") == "user"
         ]
-
