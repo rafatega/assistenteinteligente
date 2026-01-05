@@ -4,6 +4,8 @@ from app.utils.logger import logger
 
 router = APIRouter()
 
+# Rota para receber webhooks do ZAPI
+
 
 @router.post("/webhook")
 async def receive_message(request: Request, background_tasks: BackgroundTasks):
